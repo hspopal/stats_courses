@@ -1,7 +1,7 @@
 # Stats Courses
 
 ## Structural Equation Modeling
-- [Between Group Regression](https://hspopal.github.io/stats_courses/sem/assignment_02/)
+- [Path Analysis](https://hspopal.github.io/stats_courses/sem/path_analysis/)
 - [Regression with Simple Slopes](https://hspopal.github.io/stats_courses/sem/assignment_03/)
 - [Indirect Effects and Mediation](https://hspopal.github.io/stats_courses/sem/assignment_04/)
 - [Mediation](https://hspopal.github.io/stats_courses/sem/assignment_06/)
