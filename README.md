@@ -8,7 +8,7 @@
 - [Logistic Regression](https://hspopal.github.io/stats_courses/multivariate/logistic-regression/)
 - [Multi-Level Modeling](https://hspopal.github.io/stats_courses/multivariate/multi-level-modeling)
 - [Exploratory Factor Analysis](https://hspopal.github.io/stats_courses/multivariate/efa/)
-- [Assignment 10](https://hspopal.github.io/stats_courses/multivariate/assignment_10/)
+- [Confirmatory Factor Analysis](https://hspopal.github.io/stats_courses/multivariate/cfa/)
 
 
 
