@@ -3,7 +3,7 @@
 ## Structural Equation Modeling
 - [Path Analysis](https://hspopal.github.io/stats_courses/sem/path_analysis/)
 - [Indirect Effects](https://hspopal.github.io/stats_courses/sem/indirect_effects/)
-- [Indirect Effects and Mediation](https://hspopal.github.io/stats_courses/sem/assignment_04/)
+- [Confirmatory Factor Analysis](https://hspopal.github.io/stats_courses/sem/cfa/)
 - [Mediation](https://hspopal.github.io/stats_courses/sem/assignment_06/)
 - [Logistic Regression](https://hspopal.github.io/stats_courses/sem/assignment_07/)
 
