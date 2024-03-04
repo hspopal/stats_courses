@@ -5,7 +5,6 @@
 - [Indirect Effects](https://hspopal.github.io/stats_courses/sem/indirect_effects/)
 - [Confirmatory Factor Analysis](https://hspopal.github.io/stats_courses/sem/cfa/)
 - [Invariance Modeling](https://hspopal.github.io/stats_courses/sem/invariance_modeling/)
-- [Logistic Regression](https://hspopal.github.io/stats_courses/sem/assignment_07/)
 
 
 ## Hierarchical Linear Modeling
