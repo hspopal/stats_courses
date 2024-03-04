@@ -1,7 +1,6 @@
 # Stats Courses
 
 ## Multivariate
-## Study 1
 - [Assignment 01](https://hspopal.github.io/stats_courses/multivariate/assignment_01/)
 - [Assignment 02](https://hspopal.github.io/stats_courses/multivariate/assignment_02/)
 - [Between Group Regression](https://hspopal.github.io/stats_courses/multivariate/between-group_regression/)
