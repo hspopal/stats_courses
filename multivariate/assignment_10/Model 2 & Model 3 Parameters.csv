@@ -1,0 +1,53 @@
+"","lhs","op","rhs","est","std.all","lhs","op","rhs","est","std.all"
+"1","Socioemotional","=~","Communal.Sharing"," 1.00000000"," 0.89285563","Socioemotional","=~","Communal.Sharing",1,0.894338953457595
+"2","Socioemotional","=~","Endurance"," 0.96987949"," 0.86596295","Socioemotional","=~","Endurance",0.968237374424992,0.865933162261564
+"3","Socioemotional","=~","Activity.Intensity"," 0.97138607"," 0.86730797","Socioemotional","=~","Activity.Intensity",0.96862464784524,0.86628003748246
+"4","Socioemotional","=~","Activeness"," 0.63903914"," 0.57056978","Socioemotional","=~","Activeness",0.636193810324661,0.56897284497754
+"5","Socioemotional","=~","Uniqueness"," 0.80759278"," 0.72106505","Socioemotional","=~","Uniqueness",0.804370450941266,0.719380548780592
+"6","Socioemotional","=~","Attachment"," 1.07910407"," 0.96348453","Socioemotional","=~","Attachment",1.07715356609548,0.963342142140842
+"7","Socioemotional","=~","Love.Expression"," 1.06576817"," 0.95157743","Socioemotional","=~","Love.Expression",1.06492821298382,0.952408698676361
+"8","Socioemotional","=~","Mating"," 0.71632263"," 0.63957267","Socioemotional","=~","Mating",0.713386994647552,0.63800999758922
+"9","Socioemotional","=~","Expected.Reciprocity"," 0.71496057"," 0.63835661","Socioemotional","=~","Expected.Reciprocity",0.714120240741868,0.63866573203873
+"10","Socioemotional","=~","Intimacy"," 0.97480963"," 0.87036477","Socioemotional","=~","Intimacy",0.972062252003513,0.86935410522758
+"11","Exchange","=~","Importance.for.individuals.involved"," 1.00000000"," 0.48210678","Information.Exchange","=~","Importance.for.individuals.involved",1,0.479834092887159
+"12","Exchange","=~","Occupational","-1.97478186","-0.95205532","Information.Exchange","=~","Occupational",-1.98973960007602,-0.954746793311895
+"13","Exchange","=~","Strategic","-1.94698452","-0.93865405","Information.Exchange","=~","Strategic",-1.94152535709991,-0.931612733440814
+"14","Exchange","=~","Formality.and.Regulation","-1.99140688","-0.96007057","Information.Exchange","=~","Formality.and.Regulation",-2.01213333979032,-0.965492319257869
+"15","Exchange","=~","Negotiation","-0.38837588","-0.18723816","Valence.Evaluation","=~","Spatial.Distance",1,0.906001874341788
+"16","Exchange","=~","Goods.Exchange","-0.45771247","-0.22066594","Valence.Evaluation","=~","Synchronicity",0.953219675478454,0.863619032764635
+"17","Exchange","=~","Concreteness","-1.42999265","-0.68940796","Valence.Evaluation","=~","Conflict",-0.199132709130614,-0.18041451061688
+"18","Valence.Evaluation","=~","Spatial.Distance"," 1.00000000"," 0.90069382","Valence.Evaluation","=~","Coercion",-0.0736422361563608,-0.0667195856484164
+"19","Valence.Evaluation","=~","Synchronicity"," 0.96424163"," 0.86848610","Money.Exchange","=~","Negotiation",1,0.232390994217739
+"20","Valence.Evaluation","=~","Conflict","-0.20213243","-0.18205936","Money.Exchange","=~","Goods.Exchange",2.15897963211092,0.501727870605612
+"21","Valence.Evaluation","=~","Coercion","-0.07469888","-0.06728074","Money.Exchange","=~","Concreteness",4.91529398141176,1.14227429816402
+"22","Communal.Sharing","~~","Communal.Sharing"," 0.20280896"," 0.20280882","Communal.Sharing","~~","Communal.Sharing",0.200157350148688,0.200157836328375
+"23","Endurance","~~","Endurance"," 0.25010800"," 0.25010817","Endurance","~~","Endurance",0.250158710525373,0.250159758495688
+"24","Activity.Intensity","~~","Activity.Intensity"," 0.24777679"," 0.24777688","Activity.Intensity","~~","Activity.Intensity",0.249557550905662,0.249558896659388
+"25","Activeness","~~","Activeness"," 0.67445038"," 0.67445013","Activeness","~~","Activeness",0.67626840533168,0.676269901678165
+"26","Uniqueness","~~","Uniqueness"," 0.48006378"," 0.48006519","Uniqueness","~~","Uniqueness",0.482489486258052,0.482491626036135
+"27","Attachment","~~","Attachment"," 0.07169755"," 0.07169756","Attachment","~~","Attachment",0.0719714810012466,0.0719719171754947
+"28","Love.Expression","~~","Love.Expression"," 0.09450040"," 0.09450040","Love.Expression","~~","Love.Expression",0.0929170713010865,0.0929176706856005
+"29","Mating","~~","Mating"," 0.59094723"," 0.59094680","Mating","~~","Mating",0.592941394950616,0.592943242976204
+"30","Expected.Reciprocity","~~","Expected.Reciprocity"," 0.59250115"," 0.59250083","Expected.Reciprocity","~~","Expected.Reciprocity",0.592104304648365,0.592106082719433
+"31","Intimacy","~~","Intimacy"," 0.24246505"," 0.24246517","Intimacy","~~","Intimacy",0.244222302598037,0.244223439723953
+"32","Importance.for.individuals.involved","~~","Importance.for.individuals.involved"," 0.76757149"," 0.76757305","Importance.for.individuals.involved","~~","Importance.for.individuals.involved",0.769762203077448,0.769759243303158
+"33","Occupational","~~","Occupational"," 0.09359055"," 0.09359066","Occupational","~~","Occupational",0.0884585492272091,0.0884585606606528
+"34","Strategic","~~","Strategic"," 0.11892844"," 0.11892858","Strategic","~~","Strategic",0.132097464240486,0.132097714890934
+"35","Formality.and.Regulation","~~","Formality.and.Regulation"," 0.07826436"," 0.07826449","Formality.and.Regulation","~~","Formality.and.Regulation",0.067824541102211,0.0678245814540615
+"36","Negotiation","~~","Negotiation"," 0.96494488"," 0.96494187","Spatial.Distance","~~","Spatial.Distance",0.179159904304071,0.179160603689168
+"37","Goods.Exchange","~~","Goods.Exchange"," 0.95130752"," 0.95130654","Synchronicity","~~","Synchronicity",0.254161044517083,0.254162166246676
+"38","Concreteness","~~","Concreteness"," 0.52471740"," 0.52471666","Conflict","~~","Conflict",0.967447869095024,0.967450604358872
+"39","Spatial.Distance","~~","Spatial.Distance"," 0.18875094"," 0.18875063","Coercion","~~","Coercion",0.995557095003531,0.995548496890904
+"40","Synchronicity","~~","Synchronicity"," 0.24573250"," 0.24573189","Negotiation","~~","Negotiation",0.945996446621406,0.945994425806491
+"41","Conflict","~~","Conflict"," 0.96685668"," 0.96685439","Goods.Exchange","~~","Goods.Exchange",0.74826940779205,0.748269143857558
+"42","Coercion","~~","Coercion"," 0.99547739"," 0.99547330","Concreteness","~~","Concreteness",-0.304788959058207,-0.304790572246099
+"43","Socioemotional","~~","Socioemotional"," 0.79719171"," 1.00000000","Socioemotional","~~","Socioemotional",0.799840220869785,1
+"44","Exchange","~~","Exchange"," 0.23242647"," 1.00000000","Information.Exchange","~~","Information.Exchange",0.230241641987507,1
+"45","Valence.Evaluation","~~","Valence.Evaluation"," 0.81125068"," 1.00000000","Valence.Evaluation","~~","Valence.Evaluation",0.820836192019105,1
+"46","Socioemotional","~~","Exchange"," 0.33339557"," 0.77452537","Money.Exchange","~~","Money.Exchange",0.0540056895591677,1
+"47","Socioemotional","~~","Valence.Evaluation"," 0.26226275"," 0.32612019","Socioemotional","~~","Information.Exchange",0.332790437886599,0.77549192965394
+"48","Exchange","~~","Valence.Evaluation","-0.03310493","-0.07623815","Socioemotional","~~","Valence.Evaluation",0.26393716677216,0.325739692691562
+"49","","","","","","Socioemotional","~~","Money.Exchange",-0.0974989818747778,-0.46911433393199
+"50","","","","","","Information.Exchange","~~","Valence.Evaluation",-0.027365874601063,-0.0629490451978707
+"51","","","","","","Information.Exchange","~~","Money.Exchange",-0.0678638294907002,-0.60859260100408
+"52","","","","","","Valence.Evaluation","~~","Money.Exchange",0.0398407858537539,0.1892255995463

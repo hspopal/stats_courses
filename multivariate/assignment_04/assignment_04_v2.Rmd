@@ -1,0 +1,112 @@
+---
+title: "Assignment 4"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+library(psych)
+library(reghelper)
+library(sjPlot)
+```
+
+Set working directory and import data
+```{r}
+
+setwd('~/Google_Drive/courses/Multivariate/homework/assignment_04/')
+getwd()
+
+hcp_behav <- read.csv("~/Google_Drive/courses/Multivariate/homework/assignment_01/unrestricted_hspopal_9_9_2019_22_40_57.csv", row.names = 1, header = TRUE)
+```
+```{r}
+hcp_behav$Gender_group[hcp_behav$Gender == 'F'] <- 1
+hcp_behav$Gender_group[hcp_behav$Gender == 'M'] <- 2
+#hcp_behav$Age_group[hcp_behav$Age == '31-35'] <- 3
+#hcp_behav$Age_group[hcp_behav$Age == '36+'] <- 4
+```
+
+### Compute centered variable values
+```{r}
+hcp_behav <- mutate(hcp_behav, Gender_group_c = Gender_group - mean(Gender_group, na.rm = T),
+                              Friendship_Unadj_c = Friendship_Unadj - mean(Friendship_Unadj, na.rm = T),
+                             genderXfriendship = Gender_group_c*Friendship_Unadj_c)
+describe(hcp_behav[c('Gender_group','Friendship_Unadj',
+                     'Gender_group_c','Friendship_Unadj_c','genderXfriendship')])
+
+```
+
+### Run regression model for centered variables
+```{r}
+h4_m1 <- lm(LifeSatisf_Unadj ~ Gender_group_c + Friendship_Unadj_c, hcp_behav)
+summary(h4_m1)
+```
+### Run regression model for centered variables and interaction
+```{r}
+h4_m2 <- lm(LifeSatisf_Unadj ~ Gender_group_c + Friendship_Unadj_c + genderXfriendship, hcp_behav)
+summary(h4_m2)
+```
+
+# Compute possibc variables for +/- SD around the mean
+Center the data so that the person who was at 0.97, is now at zero.
+```{r}
+hcp_behav <- mutate(hcp_behav, AngAffect_m1 = AngAffect_Unadj_c + sd(AngAffect_Unadj_c, 
+                                                                    na.rm = T),
+                            AngAffect_p1 = AngAffect_Unadj_c - sd(AngAffect_Unadj_c, 
+                                                                 na.rm = T),
+                             angaffect_m1Xfrnd = AngAffect_m1*Friendship_Unadj_c,
+                             angaffect_p1Xfrnd = AngAffect_p1*Friendship_Unadj_c)
+
+describe(hcp_behav[c("AngAffect_Unadj", "AngAffect_Unadj_c", "AngAffect_m1", 
+                     "AngAffect_p1")])
+```
+
+# Model for simple slopes at 1 SD below mean of positive sibling relationships
+```{r}
+h4_m3 <- lm(LifeSatisf_Unadj ~ AngAffect_m1 + Friendship_Unadj_c + angaffect_m1Xfrnd,
+            hcp_behav)
+summary(h4_m3)
+```
+
+# Model for simple slopes at 1 SD above mean of positive sibling relationships
+
+```{r}
+h4_m4 <- lm(LifeSatisf_Unadj ~ AngAffect_p1 + Friendship_Unadj_c + angaffect_p1Xfrnd, 
+            hcp_behav)
+summary(h4_m4)
+```
+```{r}
+anova(h4_m3, h4_m4)
+```
+
+
+# Using some shortcuts
+## For continuous X continuous interaction
+```{r}
+h4_m5 <- lm(LifeSatisf_Unadj ~ AngAffect_Unadj_c*Friendship_Unadj_c, hcp_behav)
+summary(h4_m5)
+
+h4_m5_ss <- simple_slopes(h4_m5)
+h4_m5_ss
+```
+
+# Continuous X Continuous Plot
+```{r}
+h4_m5_p <- plot_model(h4_m5, type = "int")
+h4_m5_p
+
+# Also plot_model(cl5_m11, type = "diag") for regression diagnostics that are clear!
+plot_model(h4_m5, type = "diag")
+```
+
+
+
+
+
+
+
+
+
+
+
+

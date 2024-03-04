@@ -1,0 +1,339 @@
+---
+title: "Lab 02"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: word_document
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+knitr::opts_knit$set(root.dir = "C:/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/")
+```
+
+```{r, include=F}
+if(!require(dplyr)) install.packages("dplyr"); require(dplyr)
+if(!require(ggplot2)) install.packages("ggplot2"); require(ggplot2)
+if(!require(lavaan)) install.packages("lavaan"); require(lavaan)
+if(!require(GGally)) install.packages("GGally"); require(GGally)
+if(!require(lavaanPlot)) install.packages("lavaanPlot"); require(lavaanPlot)
+if(!require(psych)) install.packages("psych"); require(psych)
+if(!require(lme4)) install.packages("lme4"); require(lme4)
+if(!require(lmerTest)) install.packages("lmerTest"); require(lmerTest)
+if(!require(stargazer)) install.packages("stargazer"); require(stargazer)
+if(!require(MuMIn)) install.packages("MuMIn"); require(MuMIn)
+if(!require(effects)) install.packages("effects"); require(effects)
+```
+
+
+# Research Question
+Interpersonal relationships have significant implications for perception, emotion, memory, motivation, and decision-making. In a long term perspective, having strong social relationships are important for personal success, health and well-being. One theory proposes that humans have a unique ability to track a large number of social relationships, which have allowed us to live in large groups and societies. As humans enjoy very diverse social lives across their family life, careers, friends, communities, and social media, the research question this project attempts to address is what is the impact of a sustained decrease in the typical number and variety of social relationships on mental health. 
+
+
+# Level 1 and Level 2
+The level 1 (observation level) units of analysis are the mental well-being latent variable and person-centered measures of social relationship features. The level 2 (person level) units of analysis are the averages of the level one predictors.
+
+
+# Data Source
+Participants were recruited from Amazon Mechnical Turk (mTurk). mTurk is hosted by Amazon and provides an online platform for individuals (mTurkers) to partake in surveys. Use of mTurk has become popular in psychology research, as it allows for larger sample sizes than what can be typically collected in a lab setting. A link to the survey was posted on mTurk using turkprime.com. The use of "bots" to pose as real participants has been an issue with mTurk, and turkprime has a system that catches and excludes some of these bots. Participants from across the United States were eligible to take the survey. An additional eligibility criteria was that participants must have learned English as their first language. This is due to cultural differences in social relationships, which we believe exist but are unable to directly address. Data was collected at three time points. Only individuals who completed the first time point were invited to participate at the second and third time points. All of the survey data for the first time point was collected within one day. At the second and third time points, the survey was opened and participants were invite to complete the survey again. The survey remained open for one week to allow individuals to complete the survey. The second survey was opened three weeks after the first survey was completed, and the third survey was opened four weeks after the second survey was completed. In this way, the time between surveys differed for each participant.  Individuals who missed the second time were still allowed to complete the third time point. In total, 767 participants completed the survey at the first time point, 501 at the second time point, and 365 at the third time point.
+
+```{r}
+# Import data
+responses_excluded <- read.csv('/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/survey_data/responses_excluded.csv')
+```
+
+```{r}
+socdist_data <- responses_excluded %>% select(AmazonIdentifier, INS, IN_URels, IN_valw, anxiety, depression, behav_emo_control, pos_affect_calm, pos_affect_happy, bored, do_interests, regulation, routine, health, wave)
+
+names(socdist_data)[names(socdist_data)=='AmazonIdentifier'] <- 'ID'
+```
+
+# Dropped Cases
+
+```{r}
+# Drop cases that have any missing data
+socdist_data <- socdist_data[rowSums(is.na(socdist_data)) == 0,]
+socdist_data %>% group_by(wave) %>% summarise(count = n_distinct(ID))
+```
+
+Cases were dropped for two possible non-comliance reasons. The first is if participants failed attention check questions which were designed to easily reveal whether participants are attending to the survey. These questions were simple and had clear answers such as "which of the following is most likely the color red?" (e.g. strawberries). Participants who failed even one attention check question (of two) were excluded. The second way a participant might have been excluded is if they did not follow directions in how to format their responses for free response questions or did not answer all the questions. This was done so that the response coding could more easily be done by the researchers. In total 647 level 1 cases were dropped because of subject noncompliance. 
+
+|  Wave | Original responses | Excluding attention check failures | Excluding directions failures |
+|---|---|---|---|
+| 1 | 767 | 753 | 647 |
+| 2 | 501 | 463 | 289 |
+| 3 | 365 | 360 | 230 |
+
+
+
+
+# Variables
+This study includes variables that can be grouped as predictors, outcomes, and nuisance variables. The outcome we measured was a latent factor of mental well-being, derived from measures of anxiety, behavioral/emotional control, depression, calm-positive affect, and happy/positive affect. These five variables were measured by asking participants whether they felt each factor much less, less, about the same, more, or much more in the past week. The predictors of interest were the number of social relationships, the variety of social relationship, and the quality of social relationships they experienced in the past week. Participants were asked to report each person they interacted with in the past week, and their relationship to that person, results in their number of relationships (i.e. 10 relationships), and variety of relationship (i.e. 5 unique relationships) reported. They were also asked to rate how positive or negative each relationship was on a scale of one to five indicating very negative, negative, neutral, positive, or very positive. Nuisance variables were boredom, ability to do their interests (i.e. hobbies), ability to regulate one's emotions, their ability to do normal routine, and physical well-being, measured by a report of how they feel similar to the mental well-being questions). The level 1 variables were the social relationship feature variables and the nuisance variables, which were all person-centered as we wished to know the pure within-person effects. The level 2 variables were the participant means for the predictors, the outcome, and the nuisance variables. All variables were standardized.
+
+```{r color}
+   knitr::include_graphics("/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/path_analysis.png")
+```
+\n
+**Figure 1. Proposed path analysis**
+We hypothesize that a latent factor of mental well-being will be significantly predictive of anxiety, behavioral/emotional control, depression, calm positive affect, and happy positive affect. We further hypothesize that features of social relationships that individuals experience at home will be predictive of the latent factor of mental well-being. 
+
+
+## Variable definitions
+
+
+
+## Latent variable
+A latent variable of well-being was created from the five mental health questions. This latent variable will serve as a predictor of the mental health outcomes, and an outcome of the social relationship variables. 
+```{r}
+wellb_mod_mg <- 'Wellb =~ NA*anxiety + pos_affect_calm + depression + pos_affect_happy + behav_emo_control
+                   Wellb ~~ 1*Wellb'
+
+wellb_configural_res <- sem(wellb_mod_mg, socdist_data, estimator='wlsmv')
+socdist_data$wellb_lv <- as.numeric(predict(wellb_configural_res))
+
+
+# Set wave as a factor variable
+socdist_data$wave <- factor(socdist_data$wave)
+```
+
+## Standardize variables
+First level variables and the outcome variable will be standardized.
+```{r}
+socdist_data$INS_z <- scale(socdist_data$INS)
+socdist_data$IN_URels_z <- scale(socdist_data$IN_URels)
+socdist_data$IN_valw_z <- scale(socdist_data$IN_valw)
+socdist_data$anxiety_z <- scale(socdist_data$anxiety)
+socdist_data$pos_affect_calm_z <- scale(socdist_data$pos_affect_calm)
+socdist_data$depression_z <- scale(socdist_data$depression)
+socdist_data$pos_affect_happy_z <- scale(socdist_data$pos_affect_happy)
+socdist_data$behav_emo_control_z <- scale(socdist_data$behav_emo_control)
+socdist_data$wellb_lv_z <- scale(socdist_data$wellb_lv)
+socdist_data$bored_z <- scale(socdist_data$bored)
+socdist_data$do_interests_z <- scale(socdist_data$do_interests)
+socdist_data$regulation_z <- scale(socdist_data$regulation)
+socdist_data$routine_z <- scale(socdist_data$routine)
+socdist_data$health_z <- scale(socdist_data$health)
+```
+
+## Aggregation and centering
+The observation level variables will be aggregated as averages of the observations for each participant. Then person-centered variables will be created as this is a longitudinal analysis and we wish to focus on the pure within-subject effects. 
+```{r}
+socdist_data<-group_by(socdist_data, ID)
+socdist_data<-mutate(socdist_data, 
+                    INS_z.mean = mean(INS_z,na.rm=TRUE),
+                    INS_z.pc = INS_z - mean(INS_z,na.rm=TRUE),
+                    IN_URels_z.mean = mean(IN_URels_z,na.rm=TRUE),
+                    IN_URels_z.pc = IN_URels_z - mean(IN_URels_z,na.rm=TRUE),
+                    IN_valw_z.mean = mean(IN_valw_z,na.rm=TRUE),
+                    IN_valw_z.pc = IN_valw_z - mean(IN_valw_z,na.rm=TRUE), 
+                    wellb_lv_z.mean = mean(wellb_lv_z, na.rm=TRUE), 
+                    bored_z.mean = mean(bored_z,na.rm=TRUE),
+                    bored_z.pc = bored_z - mean(bored_z,na.rm=TRUE),
+                    do_interests_z.mean = mean(do_interests_z,na.rm=TRUE),
+                    do_interests_z.pc = do_interests_z - mean(do_interests_z,na.rm=TRUE),
+                    regulation_z.mean = mean(regulation_z,na.rm=TRUE),
+                    regulation_z.pc = regulation_z - mean(regulation_z,na.rm=TRUE),
+                    routine_z.mean = mean(routine_z,na.rm=TRUE),
+                    routine_z.pc = routine_z - mean(routine_z,na.rm=TRUE),
+                    health_z.mean = mean(health_z,na.rm=TRUE),
+                    health_z.pc = health_z - mean(health_z,na.rm=TRUE),
+                    nobs=n())
+
+socdist_data[, 16:ncol(socdist_data)] <- lapply(16:ncol(socdist_data), function(x) as.numeric(socdist_data[[x]]))
+```
+
+
+
+# Scatterplot Matrix
+
+## Level 1 variables
+```{r, warning=F, fig.width = 8, fig.height = 8}
+ggpairs(socdist_data[c('INS_z.pc', 'IN_URels_z.pc', 'IN_valw_z.pc', 
+                      'wellb_lv_z', 'bored_z.pc', 'do_interests_z.pc', 
+                      'regulation_z.pc', 'routine_z.pc', 'health_z.pc')], 
+        lower = list(continuous = wrap("smooth", method = "loess")),
+        missing='exclude')
+```
+\n
+**Figure 2. Scatterplot matrix for person level outcome variable of well-being, social relationship features (predictors), and nuisance variables**
+
+## Level 2 variables
+
+```{r, warning=F, fig.width = 8, fig.height = 8}
+ggpairs(socdist_data[c('INS_z.mean', 'IN_URels_z.mean', 'IN_valw_z.mean', 
+                      'wellb_lv_z.mean', 'bored_z.mean', 'do_interests_z.mean', 
+                      'regulation_z.mean', 'routine_z.mean', 'health_z.mean')], 
+        lower = list(continuous = wrap("smooth", method = "loess")),
+        missing='exclude')
+```
+\n
+**Figure 2. Scatterplot matrix for person level outcome variable of well-being, social relationship features (predictors), and nuisance variables**
+
+
+# Distribution of Outcome
+```{r}
+ggplot(socdist_data, aes(x = wave, y=wellb_lv_z, fill=wave)) + 
+  geom_violin() + 
+  geom_jitter(width=0.05) + 
+  theme_classic() + 
+  labs(title = "Distribution of Mental Well-being by Time point", 
+       x="Time Point", y = "Mental Well-being") + 
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+```
+\n**Figure 3. Distribution of the mental well-being outcome variable for each time point.**
+
+
+# Summary Statistics
+```{r, echo=F, results=F}
+describe(socdist_data)
+```
+
+**Table 2. Summary statistics.** All variables were z-standardized. IN = Immediate network, PC = person-centered, M = person-level mean.
+| Measure                         | Mean  | Standard Deviation |
+|---|---|---|
+| Mental well-being               | 0     | .89 |
+| IN size PC                      | 0     | .23 |
+| IN # of unique relationships PC | 0     | .34 |
+| IN time-weighted valence PC     | 0     | .45 |
+| Boredom PC                      | 0     | .50 |
+| Ability to do interests PC      | 0     | .55 |
+| Emotion regulation PC           | 0     | .54 |
+| Ability to do normal routine PC | 0     | .56 |
+| General physical health PC      | 0     | .30 |
+| IN size M                      | 0     | .97 |
+| IN # of unique relationships M | 0     | .94 |
+| IN time-weighted valence M     | 0     | .89 |
+| Boredom M                      | 0     | .86 |
+| Ability to do interests M      | 0     | .83 |
+| Emotion regulation M           | 0     | .84 |
+| Ability to do normal routine M | 0     | .83 |
+| General physical health M      | 0     | .96 |
+
+
+# Regressions
+
+## Empty model
+```{r}
+model1 <- lmer(wellb_lv_z ~ 1 + (1|ID), data=socdist_data)
+summary(model1)
+```
+
+### Variance Components
+```{r}
+# ICC
+sigma2 <- attr(VarCorr(model1), "sc")^2
+tau2 <- as.numeric(VarCorr(model1))
+tau2 / (sigma2 + tau2)
+```
+
+```{r}
+ranova(model1)
+```
+There is significant variation in mental well-being amongst participants.
+
+
+## Within- and Between-person model
+```{r}
+model2 <- lmer(wellb_lv ~ INS_z.pc + IN_URels_z.pc + IN_valw_z.pc + 
+                          bored_z.pc + do_interests_z.pc + regulation_z.pc + 
+                          routine_z.pc + health_z.pc + 
+                          INS_z.mean + IN_URels_z.mean + IN_valw_z.mean + 
+                          bored_z.mean + do_interests_z.mean + 
+                          regulation_z.mean + routine_z.mean + health_z.mean + 
+                          (1 | ID), 
+               data=socdist_data)
+
+summary(model2)
+```
+### Variance Components
+```{r}
+# ICC
+sigma2 <- attr(VarCorr(model2), "sc")^2
+tau2 <- as.numeric(VarCorr(model2))
+tau2 / (sigma2 + tau2)
+```
+
+```{r}
+# R^2
+r.squaredGLMM(model2)
+```
+
+## Ordinary least squares
+```{r}
+model3 <- lm(wellb_lv ~ INS_z.pc + IN_URels_z.pc + IN_valw_z.pc + 
+                        bored_z.pc + do_interests_z.pc + regulation_z.pc + 
+                        routine_z.pc + health_z.pc + 
+                        INS_z.mean + IN_URels_z.mean + IN_valw_z.mean + 
+                        bored_z.mean + do_interests_z.mean + regulation_z.mean + 
+                        routine_z.mean + health_z.mean, data = socdist_data)
+
+summary(model3)
+```
+
+
+# Regression Table
+```{r, results=F}
+class(model1) <- "lmerMod"
+class(model2) <- "lmerMod"
+
+stargazer(model1, model2, model3, type="text", 
+          out = "/Users/Administrator/Google_Drive/courses/Hierarchical_Linear_Modeling/labs/lab_02/regression_table.html",star.cutoffs=c(.05, .005, .001), 
+          covariate.labels = c("IN size PC", "IN # of unique relationships PC", 
+                               "IN time-weighted valence PC", "Boredom PC", 
+                               "Ability to do interests PC", 
+                               "Emotion regulation PC", 
+                               "Ability to do normal routine PC", 
+                               "General physical health PC",
+                               "IN size M", "IN # of unique relationships M", 
+                               "IN time-weighted valence M", "Boredom M", 
+                               "Ability to do interests M", 
+                               "Emotion regulation M", 
+                               "Ability to do normal routine M", 
+                               "General physical health M"),
+          dep.var.labels = c("Mental well-being", "Mental well-being"), 
+          title = "Table 3. Regression table for the empty, within and between, and the ordinary least squares models. ", 
+          notes="All variables are z-standardized. IN = Immediate network, PC = person-centered, M = person-level mean.")
+```
+
+
+
+# Write-up
+A latent variable of mental well-being was used as the outcome in a within- and between-subjects model. Note that a higher mental well-being score indicates worse mental well-being, as this latent variable was negatively related to happy calm affect and positive calm affect, and positively related to anxiety, depression, and behavioral/emotional control. The predictors in the model were immediate network size, number of unique relationships, time-weighted immediate network valence, and the nuisance variables of boredom, ability to do interests, emotion regulation, ability to due normal routine, and general physical health. None of the predictors had significant within-person effects. Immediate network size was weakly related to mental well-being. When comparing two observations from the same individual, if immediate network size is one SD higher at one observation than the other, the mental well-being will be score will be 0.15 SD lower (indicating better mental well-being). For the person-level effects, time-weighted relationship valence was weakly, but significantly, predictive of mental well-being, where if two participants differ in time-weighted relationship valence by one standard deviation, the participant with the higher score will have a lower mental well-being score of 0.07 SD, holding constant immediate network size, number of unique relationships in the immediate network, and the nuisance variables (Table 2, Fig. 2). 
+
+
+# Graph
+```{r}
+model2_eff <- Effect(c("IN_valw_z.pc", "IN_valw_z.mean"), model2, 
+                xlevels=list(IN_valw_z.pc=c(-1,1), IN_valw_z.mean=c(-1,1)))
+model2_eff_df <- data.frame(model2_eff)
+model2_eff_df$IN_valw_z.meanf <- factor(model2_eff_df$IN_valw_z.mean, 
+                                       labels=c("-1 SD", "+1 SD"))
+model2_eff_df
+```
+
+```{r}
+ggplot(model2_eff_df, aes(x=IN_valw_z.pc, y=fit, color=IN_valw_z.meanf)) + 
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha=.1) + 
+  geom_line() + 
+  ggtitle("Social Relationship Valence and Mental Well-being") + 
+  xlab("Time-weighted social relationship valence (z)") + 
+  ylab("Mental Well-being (z)") + 
+  labs(color="Mean prior relationship valence")
+```
+
+
+# OLS vs MLM
+The slopes for the observation level person-centered variables are the same between the linear mixed-effects and the ordinary least squares models. The slopes for the person-level variables are different, with the OLS model usually having higher slopes. The standard errors are larger in the OLS model as well for the person-centered variables, and larger for the subject-mean variables. Since the OLS model violates the independent sampling assumption, an over inflation in significant resulted for a number of predictors and nuisance variables at the person-level. 
+
+
+# Appendix
+
+
+
+
+
+
+

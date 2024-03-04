@@ -1,0 +1,105 @@
+---
+title: "Assignment 3 - Indirect Effects"
+output: html_notebook
+---
+
+```{r}
+library(haven)
+library(lavaan)
+library(semPlot)
+library(tidyverse)
+```
+
+```{r}
+setwd('~/Google_Drive/courses/Structural_Equation_Modeling/assignments/assignment_03/')
+getwd()
+```
+
+## Import Human Connectome Project (HCP) dataset
+This dataset is the Human Connectome Project data for healthy young adults. I will be looking at neuroticism from the NEO-PI, a measure of theory of mind, a measure of friendship, and a measure of angry affect.
+
+```{r}
+hw3_df <- read.csv('../unrestricted_hspopal_9_9_2019_22_40_57.csv')
+```
+
+
+## Specify the linear model: AngAffect_Unadj (angry affect) as DV
+```{r}
+h3_m1 <- lm(AngAffect_Unadj ~ Social_Task_Perc_TOM + NEOFAC_N, hw3_df)
+coefficients(summary(h3_m1))
+```
+
+## Specify the linear model: psipam1 (Mom Parenting Stress) as DV
+```{r}
+h3_m2 <- lm(Friendship_Unadj ~ Social_Task_Perc_TOM + NEOFAC_N + AngAffect_Unadj, hw3_df)
+coefficients(summary(h3_m2))
+#round(coefficients(summary(cl3_m2)), 3)
+```
+
+
+## Specify the full model
+```{r}
+h3_m3 <- 'Friendship_Unadj ~ Social_Task_Perc_TOM + NEOFAC_N + AngAffect_Unadj
+           AngAffect_Unadj ~ Social_Task_Perc_TOM + NEOFAC_N'
+
+# Estimate the model
+h3_m3_fit <- sem(h3_m3, hw3_df)
+summary(h3_m3_fit)
+```
+
+
+# Indirect Effect
+
+## Fit the model
+```{r}
+hw3_m4 <- '#direct effect 
+           Friendship_Unadj ~ c*NEOFAC_N
+           
+           #DV ON Mediator
+           Friendship_Unadj ~ b*AngAffect_Unadj
+           
+           #M ON IV
+           AngAffect_Unadj ~ a*NEOFAC_N
+
+           # indirect effect (a*b)
+           ab := a*b
+           
+           # total effect
+           total := c + (a*b)'
+
+hw3_m4_fit <- sem(hw3_m4, hw3_df)
+
+# Examine model parameters
+parameterEstimates(hw3_m4_fit, standardized = T)
+```
+
+### Set seed for replicability
+```{r}
+set.seed(8675309)
+```
+
+## Fit the bootstrapped model
+```{r}
+hw3_m4_fit_boot <- sem(hw3_m4, hw3_df, se = "bootstrap", bootstrap = 1000)
+
+# Examine the bootstrapped model parameters
+parameterEstimates(hw3_m4_fit_boot, standardized = T, boot.ci.type = "bca.simple")
+```
+
+
+```{r}
+semPaths(hw3_m4_fit_boot, "path", whatLabels = "est", 
+         edge.label.cex = 1, rotation = 2, intercepts = FALSE, residuals = TRUE, curve = 1, 
+         curvature = 3, nCharNodes = 8, sizeMan = 16, sizeMan2 = 3, optimizeLatRes = TRUE, edge.color = "#000000")
+```
+
+
+# Results and Discussion
+
+Models were estimated using the lavaan package available in R. Due to the inclusion of indirect effects in the model, we relied on bias corrected bootstrapping, with 1000 bootstrap resamples, to evaluate the significance of those paths. The model was specified such that there were direct effects of neuroticism and angry affect on a measure of friendship. There were also indirect effects specified, such that the influence of neuroticism on friendship were hypothesized to operate through angry affect.
+
+We found that neuroticism and angry affect was associated with friendship (b = -.31, SE = .04, z = -7.31, p  < .001; b = -.18, SE = .04, z = -5.07, p < .001). We also found that neuroticism was associated with angry affect (b = .55, SE = .03, z = 17.92, p  < .001), We found a significant indirect of neuroticism on friendship through angry affect (b = -.10, 95% CI = -.14, -.06). 
+
+
+
+

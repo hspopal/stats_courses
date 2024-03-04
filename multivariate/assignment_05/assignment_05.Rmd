@@ -1,0 +1,91 @@
+---
+title: "Assignment 5"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+library(psych)
+library(mediation)
+#library(processR)
+library(lavaan)
+```
+
+### Read in data
+```{r}
+setwd('~/Google_Drive/courses/Multivariate/homework/assignment_05/')
+getwd()
+
+hcp_behav <- read.csv("../unrestricted_hspopal_9_9_2019_22_40_57.csv", row.names = 1, header = TRUE)
+```
+
+## Correlations between variables of interest
+```{r}
+cor(hcp_behav[c('AngAffect_Unadj','Friendship_Unadj','LifeSatisf_Unadj')], use = "complete.obs")
+```
+
+
+## Model Specfication for indirect effect
+```{r}
+h5_m1_y <- lm(LifeSatisf_Unadj ~ AngAffect_Unadj + Friendship_Unadj, hcp_behav)
+h5_m1_m <- lm(AngAffect_Unadj ~ Friendship_Unadj, h5_m1_y$model) 
+summary(h5_m1_y)
+summary(h5_m1_m)
+```
+
+## Estimate indirect effect
+```{r}
+h5_m1_med <- mediate(h5_m1_m, h5_m1_y, sims = 1000, boot = T, boot.ci.type = "bca",
+        treat = "Friendship_Unadj", mediator = "AngAffect_Unadj")
+summary(h5_m1_med)
+```
+
+# Central tendencies for the indirect effect (with some modest differences in the way of computing averages)
+```{r}
+mean(h5_m1_med$d.avg.sims)
+median(h5_m1_med$d1.sims)
+```
+
+# Plot distribution of indirect effects across resamples
+# Create dataframe of the bootstrap replications
+```{r}
+ind_eff_df <- data.frame(h5_m1_med$d.avg.sims)
+names(ind_eff_df) <- c("eff")
+
+ind_eff_plot <- ggplot(ind_eff_df, aes(x=eff)) + geom_histogram()
+ind_eff_plot
+```
+distribution is normal
+
+
+## lavaan for simple mediation
+### Define the model to be estimated:
+```{r}
+h5_m2_model <- '#Y ON IV
+                LifeSatisf_Unadj ~ c*Friendship_Unadj
+                #Y ON M
+                LifeSatisf_Unadj ~ b*AngAffect_Unadj
+                #Previous lines could be condensed
+                #LifeSatisf_Unadj ~ b*AngAffect_Unadj + c*Friendship_Unadj
+                #M ON IV
+                AngAffect_Unadj ~ a*Friendship_Unadj
+                #Indirect effect
+                ab := a*b
+                #Total effect
+                tot_eff := c + (a*b)'
+```
+
+
+### Estimate the model and look at the results
+```{r}
+h5_m2 <- sem(h5_m2_model, hcp_behav)
+summary(h5_m2)
+
+parameterEstimates(h5_m2, standardized = T, boot.ci.type = "bca.simple")
+```
+
+# Results
+We examined whether the relationship between friendship and life satisfaction was (partially) mediated by angry affect. In the multiple regression models, we found that friendship predicted life satisfaction (b = .30, SE = .027, t = 10.97, p < .001) and angry affect predicted life satisfaction (b = -.29, SE = .029, t = -9.83, p < .001). However, friendship was also associated with angry affect (b = -.27, SE = .025, t = -10.46, p < .001). We examined the indirect effect using non-parametric bootstrapped confidence interval. The point estimate for the indirect effect was .077 (95% CI = 0.059-.10). This indirect effect was significantly different from 0.
+
+

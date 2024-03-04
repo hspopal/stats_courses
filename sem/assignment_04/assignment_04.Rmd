@@ -1,0 +1,219 @@
+---
+title: "Assignment 5 - Confirmatory Factor Analysis"
+output: html_notebook
+---
+
+```{r}
+library(lavaan)
+#library(lavaanPlot)
+library(tidyverse)
+library(apaTables)
+
+library(corrplot) 
+```
+
+
+```{r}
+#setwd("C:/Users/Administrator/Google Drive/courses/Structural_Equation_Modeling/assignments/assignment_04/")
+setwd("~/Google_Drive/courses/Structural_Equation_Modeling/assignments/assignment_04/")
+getwd()
+```
+
+
+# The Dimensional Representation of Social Relationships
+
+### Import and configure relationship dimension dataset
+This dataset was collected via Amazon Mechanical Turk (mturk). The dataset contains ratings of 159 social relationships (i.e. parent - child, parent - teenager, husband - wife, etc.), on 30 dimensions. Participants were asked to rate each given relationship, on each of the given dimensions (i.e. how related is this relationship to this dimension).
+
+The dimensions were derived from a literature search, where each source presented 2-6 dimensions that they believed could explain all of the variance between people's conceptual understanding of social relationships. We collected all of these dimensions to create our list of 30 total dimensions.
+```{r}
+dim_rel <- read.csv("dim_rel.csv")
+dim_rel <- as.data.frame(t(dim_rel))
+
+#Provide names to the variables
+names(dim_rel) <- as.character(unlist(dim_rel[1,]))
+dim_rel = dim_rel[-1, ]
+#rownames(dim_rel) <- NULL
+
+dim_rel <- apply(dim_rel, 2,            # Specify own function within apply
+                    function(x) as.numeric(as.character(x)))
+
+# Remove spaces from column names
+colnames(dim_rel) <- sub(" ", "_", colnames(dim_rel))
+
+
+colnames(dim_rel)
+```
+
+## Print full correlation matrix with means and standard deviations
+```{r}
+apa.cor.table(dim_rel)
+```
+This doesn't print things in the best format, so I am printing a correlation matrix figure below.
+
+
+
+### Correlation Matrix Figure
+```{r fig1, fig.height = 15, fig.width = 15}
+#apa.cor.table(dim_rel)
+
+cor_mtx <- cor(dim_rel) # get correlations
+
+corrplot(cor_mtx, method = "number", type = "lower", number.cex = 1, tl.col = "black", tl.cex = 1.5, col = colorRampPalette(c("blue","white","red"))(200))
+
+```
+
+
+## Initial model
+In this model, we hypothesize that the communal sharing, endurance, attachment, and love expression dimensions are part of a broader construct, the socioemotional dimension. The socioemotional dimension was derived in the original paper by a factor analysis, and so in this analysis, we would like to see if this is a latent factor that captures some of the variance of the other dimensions, from other sources.
+```{r}
+dim_rel_m1 <- 'Socioemotional =~ NA*Communal_Sharing + Endurance + Attachment + Love_Expression
+           Socioemotional ~~ 1*Socioemotional'
+
+#Fit initial model
+
+dim_rel_m1_fit <- sem(dim_rel_m1, dim_rel)
+
+#Examine initial summary data
+summary(dim_rel_m1_fit)
+```
+
+
+
+
+### Multiple steps to get smaller amount of information
+```{r}
+dim_rel_m1_fit_ab <- data.frame(fitMeasures(dim_rel_m1_fit))
+dim_rel_m1_fit_ab <- round(dim_rel_m1_fit_ab, 3)
+dim_rel_m1_fit_ab$index <- row.names(dim_rel_m1_fit_ab)
+```
+
+
+
+### Retaining only the commonly used indices; the last '[c(2,1)]' just changes the order of the columns
+```{r}
+dim_rel_m1_fit_ab <- dim_rel_m1_fit_ab[dim_rel_m1_fit_ab$index %in% c("npar", "chisq", "df", "pvalue",
+                                                    "rmsea", "rmsea.ci.lower", "rmsea.ci.upper",
+                                                    "rmsea.pvalue", "cfi", "tli", "aic", "bic", "bic2"),][c(2,1)]
+dim_rel_m1_fit_ab
+```
+CFI is good as it is above 0.95.
+TLI is also good as it is high, but not great (below 0.95).
+AIC and BIC are good because they are very high.
+The rmsea is very high, and the p-value is significant, is significant, indicating that there is little chance the rmsea is below 0.05
+The model fits somewhat well.
+
+
+## Examine Parameter Estimates
+```{r}
+parameterestimates(dim_rel_m1_fit, ci = F, standardized = T)
+```
+Since the model does not fit as well as we would like, we should be careful interpreting the factor loadings. All of the factor loadings and significant, and the z-scores are high. 
+
+
+
+## Plot with unstandardized estimates
+```{r}
+lavaanPlot("plot", dim_rel_m1_fit, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "black"), 
+           coefs = T, sig = 1.00, stars = c("regress", "latent", "covs"),
+           covs = T)
+```
+
+## Plot with standardized estimates
+```{r}
+lavaanPlot("plot", dim_rel_m1_fit, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "black"), 
+           coefs = T, sig = 1.00, stand = T, stars = c("regress", "latent", "covs"),
+           covs = T)
+```
+
+
+
+
+## Inspection of residuals
+### Unstandardized
+```{r}
+resid(dim_rel_m1_fit)
+```
+
+
+### Standardized
+```{r}
+resid(dim_rel_m1_fit, type="standardized")
+```
+
+
+
+
+# Revised/Comparison model
+To look at the differences in loadings between factors
+```{r}
+dim_rel_m2 <- 'Socioemotional =~ NA*Communal_Sharing + equal("Socioemotional=~Communal_Sharing")*Endurance +  equal("Socioemotional=~Communal_Sharing")*Attachment + 
+                    equal("Socioemotional=~Communal_Sharing")*Love_Expression
+           Socioemotional ~~ 1*Socioemotional '
+
+#Fit initial model
+
+dim_rel_m2_fit <- sem(dim_rel_m2, dim_rel)
+
+#Examine initial summary data
+summary(dim_rel_m2_fit)
+```
+
+
+### Multiple steps to get smaller amount of information
+```{r}
+dim_rel_m2_fit_ab <- data.frame(fitMeasures(dim_rel_m2_fit))
+dim_rel_m2_fit_ab <- round(dim_rel_m2_fit_ab, 3)
+dim_rel_m2_fit_ab$index <- row.names(dim_rel_m2_fit_ab)
+
+#Retaining only the commonly used indices; the last '[c(2,1)]' just changes the 
+#order of the columns
+dim_rel_m2_fit_ab <- dim_rel_m2_fit_ab[dim_rel_m2_fit_ab$index %in% c("npar", "chisq", "df", "pvalue",
+                                                          "rmsea", "rmsea.ci.lower", "rmsea.ci.upper",
+                                                          "rmsea.pvalue", "cfi", "tli", "aic", "bic", "bic2"),][c(2,1)]
+dim_rel_m2_fit_ab
+```
+
+
+## Examine Parameter Estimates
+Standardized now
+```{r}
+parameterestimates(dim_rel_m2_fit, ci = F, standardized = T)
+```
+
+
+
+## Plot with unstandardized estimates
+```{r}
+lavaanPlot("plot", dim_rel_m2_fit, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "black"), 
+           coefs = T, sig = 1.00, stars = c("regress", "latent", "covs"),
+           covs = T)
+```
+
+## Inspection of residuals
+### Unstandardized
+```{r}
+resid(dim_rel_m2_fit)
+```
+
+
+### Standardized
+```{r}
+resid(dim_rel_m2_fit, type="standardized")
+```
+
+
+
+# Results and Discussion
+Before examining the full mediation model, we first examined the fit of a measurement model to our latent factor. In this analysis, we found mixed results as to the how well the model fit the data. The CFI was above 0.95, and the AIC (5332.563) and BIC (5357.115) were both large, all indicating that there was a good fit. However, the chi-square p-value was below .001, the LFI was low (0.927), and the RMSEA was high (0.244), with an insignificant p-value, indicating the that RMSEA is likely not below 0.05. Together, this indicates that the model may fit the data, but the factor loadings should be interpreted with caution. In this model, communal sharing, endurance, attachment, and love expression all had substantial loadings on the latent factor of socioemotionality (all Bs > 23.0; all p < .001). These loadings make sense, as socioemotionality can be thought of as a likelihood of being emotionally intimate, pleasure-oriented, and having to do with personal or familial ties. Endurance, or the likelihood that a relationship would be long lasting, loaded the least strongly on this latent factor as relationships that are high on socioemotionality may not always be long lasting (people who date, but do not become married).
+
+Next, we examined the fit of a correlated factor model. The hypothesis is that the indicators (communal sharing, endurance, attachment, and love expression) would load equally onto the latent factor of socioemotionality. This model had a worse fit to the data as the chi-square was significant, the CFI (0.929) and the LFI (0.915) we both lower, and the RMSEA was high (0.264, p < .001, CI: [0.207 0.325]. The AIC (5365.980) and the BIC (5381. 324) were both high, but overall, this model does not fit the data. In this model, the indicators all had significant loadings onto the latent factor (all Bs > 26.0; all p < .001). However, in this model the factor loadings do not make sense, as they each correlated differently onto the latent factor. Seeing as there is a poor fit to the data, it does not seem reasonable that the indicators load onto the latent factor in a similar way.
+
+The first model had a better fit, and a more interpretable result. The latent factor of socioemotionality is a highly complex dimension of social relationships, that incorporates a range of loadings from the indicators. An example of a highly socioemotional relationship would be the relationship between people who are dating. This relationship could also be high on the dimensions of communal sharing, where individuals share meals, an apartment, financial burdens, and high on attachment and love expression, but moderately on endurance, as people who date do not always do so long-term. Another relationship that would be highly socioemotional would be the relationship between a husband and wife. In this case, the relationship would be high on all for of the indicators. This example highlights that the best model would be a model in which the indicators do not load evenly onto the latent factor.
+

@@ -1,0 +1,115 @@
+---
+title: "Assignment 6"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+library(psych)
+library(lavaan)
+#library(semPlot)
+```
+
+# Note: I am having trouble installing the semPlot package, and so did not include any of that code in this script
+
+```{r}
+setwd('~/Google_Drive/courses/Multivariate/homework/assignment_06')
+getwd()
+
+h6_df <- read_sav('Assignment 6 Conditional Process Data.sav')
+names(h6_df)
+```
+
+## Estimate the first model with just the X, Y, and mediator
+```{r}
+h6_mod1 <-   'aggress ~ b*cogcon + c*sleep + provoc
+              cogcon ~ a*sleep + provoc
+              #Indirect effect
+                ab := a*b
+                #Total effect
+                tot_eff := c + (a*b)'
+
+
+h6_m1 <- sem(h6_mod1, h6_df)
+summary(h6_m1)
+```
+
+
+### Bootstrap the CIs
+```{r}
+parameterEstimates(h6_m1, standardized = T, boot.ci.type = "bca.simple")
+```
+The condition indirect effect of provocation is significant as the p < .05 and the CI does not include 0
+
+## Modeling the interaction of sleep and provocation and the indirect effects
+
+### create centered variables and interaction terms
+```{r}
+h6_df$sleepc = h6_df$sleep - mean(h6_df$sleep, na.rm = T)
+h6_df$cogconc = h6_df$cogcon - mean(h6_df$cogcon, na.rm = T)
+h6_df$provocc = h6_df$provoc - mean(h6_df$provoc, na.rm = T)
+h6_df$sleep_provoc = h6_df$provocc*h6_df$sleepc
+
+describe(h6_df)
+```
+
+### Adding the interaction only on the a path
+```{r}
+h6_mod2 <-   'cogconc ~ a1*sleepc + a2* provocc + a3*sleep_provoc
+              aggress ~ b1*cogconc + c*sleepc
+              #Indirect effect
+                INDHighProv := b1*(a1 + a3*-.528)
+                INDLowProv := b1*(a1 + a3*0.472)
+              #Total effect
+                TOTHighProv := INDHighProv + c
+                TOTLowProv := INDLowProv + c
+                IndexMM := INDHighProv - INDLowProv'
+
+h6_m2 <- sem(h6_mod2, h6_df)
+summary(h6_m2)
+```
+### Bootstrap the CIs
+```{r}
+parameterEstimates(h6_m2, standardized = T, boot.ci.type = "bca.simple")
+```
+
+
+## Estimating the conditional indirect effect for with high provocation
+```{r}
+h6_df$provoc_high = h6_df$provocc + .528
+h6_df$sleep_provoc_high = h6_df$provoc_high*h6_df$sleepc
+
+h6_mod3 <-   'cogconc ~ a1*sleepc + a2* provoc_high + a3*sleep_provoc_high
+              aggress ~ b1*cogconc + c*sleepc
+              #Indirect effect
+                INDHighProv := a1*b1'
+
+h6_m3 <- sem(h6_mod3, h6_df)
+summary(h6_m3)
+
+parameterEstimates(h6_m3, standardized = T, boot.ci.type = "bca.simple")
+```
+
+## Estimating the conditional indirect effect for with low provocation
+```{r}
+h6_df$provoc_low = h6_df$provocc - .472
+h6_df$sleep_provoc_low = h6_df$provoc_low*h6_df$sleepc
+
+h6_mod4 <-   'cogconc ~ a1*sleepc + a2* provoc_low + a3*sleep_provoc_low
+              aggress ~ b1*cogconc + c*sleepc
+              #Indirect effect
+                INDlowProv := a1*b1'
+
+h6_m4 <- sem(h6_mod4, h6_df)
+summary(h6_m4)
+
+parameterEstimates(h6_m4, standardized = T, boot.ci.type = "bca.simple")
+```
+
+
+
+
+
+
+

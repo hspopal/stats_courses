@@ -1,0 +1,188 @@
+---
+title: "Assignment #8 - Weight versus age of chicks on different diets"
+output: html_notebook
+---
+
+```{r}
+library(haven)
+library(plyr)
+library(tidyverse)
+library(psych)
+library(lme4)
+library(lmerTest)
+library(sjPlot)
+library(reghelper)
+```
+
+### Read in Data
+```{r}
+setwd('~/Google_Drive/courses/Multivariate/homework/assignment_08/')
+getwd()
+
+h8df <- read.csv('chickweight.csv')
+
+names(h8df)
+```
+
+### Declare the ID variable as a factor variable
+```{r}
+h8df$Chick <- as.factor(h8df$Chick)
+
+# Create the list of ids as an object
+h8_chick <- levels(h8df$Chick)
+```
+
+### Take random samples of ids to examine spaghetti plots
+```{r}
+ggplot(subset(h8df, Chick %in% sample(h8_chick, 10)), aes(Time, weight, group = Chick)) + geom_line()
+
+ggplot(subset(h8df, Chick %in% sample(h8_chick, 20)), aes(Time, weight, group = Chick)) + geom_line()
+
+#ggplot(subset(h8df, Chick %in% sample(h8_chick, 200)), aes(weight, Diet, group = Chick)) + geom_line()
+
+ggplot(h8df, aes(Time, weight, group = Chick)) + geom_line()
+```
+
+
+## Auto-split dataframe and estimate linear models for each participant
+```{r}
+h8m1 <- dlply(h8df, "Chick", function(df) 
+  lm(weight ~ Time, data = df))
+
+
+#Combine regression coefficients into a single dataframe
+h8m1_coef <- ldply(h8m1, coef)
+
+#Summarize those results
+describe(h8m1_coef[2:3])
+names(h8m1_coef) <- c("Chick", "Intercept", "weight_on_time")
+
+#Create plots by school regression model
+h8m1_coef_b0_plot <- ggplot(h8m1_coef, aes(Intercept)) + geom_histogram()
+mean(h8m1_coef$Intercept)
+h8m1_coef_b0_plot
+
+h8m1_coef_b1_plot <- ggplot(h8m1_coef, aes(weight_on_time)) + geom_histogram()
+mean(h8m1_coef$Diet)
+h8m1_coef_b1_plot
+```
+
+
+## Estimate MLM for time predicting weight
+```{r}
+h8m2 <- lmer(weight ~ Time + (1 + Time | Chick), h8df)
+summary(h8m2)
+```
+
+
+
+### Plot Summary of the Time on Weight Model
+```{r}
+pl_df <- data.frame(get_model_data(h8m2, "pred"))
+ggplot(pl_df, aes(Time.x, Time.predicted)) + geom_line() + geom_ribbon(aes(ymin = Time.conf.low, ymax = Time.conf.high), alpha = .3)
+```
+
+
+## Conditional growth model; diet influencing course of weight
+```{r}
+h8m3 <- lmer(weight ~ Time*Diet + (1 + Time | Chick), h8df)
+summary(h8m3)
+```
+
+
+### Center between chick predictor
+```{r}
+h8df$dietr <- h8df$Diet - mean(h8df$Diet, rm.na = T)
+
+h8df$dietr <- as.factor(h8df$dietr)
+
+h8m4 <- lmer(weight ~ Time*dietr + (1 + Time | Chick), h8df)
+summary(h8m4)
+```
+
+
+### Obtain Simple slopes
+```{r}
+simple_slopes(h8m4)
+```
+
+### Fix simple slopes
+```{r}
+h8m4_ss <- data.frame(simple_slopes(h8m4))
+h8m4_ss
+```
+
+
+### Estimate / SE = t-statistic
+```{r}
+h8m4_ss$tstat <- h8m4_ss$Test.Estimate/h8m4_ss$Std..Error
+h8m4_ss
+
+plot_model(h8m4, "int", show.loess = F)
+```
+
+
+### Obtain 2-tailed critical values from the t-distribution. 
+first argument is the alpha level; default is one-tailed; divide by 2 for two-tailed
+second argument is the number of degrees of freedom
+```{r}
+abs(qt((0.05/2), 45.15480))
+```
+
+
+
+# Tom's Solution
+```{r}
+chick.notgood <- lmer(weight~Diet + (1|Chick), data=ChickWeight)
+summary(chick.notgood)
+# When you look at the main effect of diet on weight, you are looking at the average over time
+
+
+# Do an anova to see if there any differences between diet groups. 
+anova(chick.notgood)
+
+difflsmeans(chick.notgood, test.effs = "group")
+
+# This just tests differences at baseline, wehere t=0
+chick.bettter <- lmer(weight~Diet + Time + (Time|Chick), data=ChickWeight)
+anova(chick.better)
+
+difflsmeans(chick.better, test.effs = "group")
+
+# Estimate time*diet
+# In this model, we are looking at the main effect of weight, when Time is 0
+# So that's why the interpretation and the values of Diet in this model and the previous ones is different
+dat <- lmer(weight~Diet + Time +(Diet*Time) + (Time|Chick), data=ChickWeight)
+summary(dat)
+
+difflsmeans(dat, test.effs = "group")
+
+# This does not tell us
+# This does tell use which diet is particularly effective. Are the pairwise differnces between the slopes significant
+reghelper::simple_slopes(dat)
+
+m.lst <- emtrends(dat, "Diet", var="Time")
+# Compute the specific contrasts amongst all the different slope differences
+pairs(m.lst)
+
+
+ChickWeight <- ChickWeight %>% mutate(pt.time = Time-max(Time))
+dat.1 <- lmer(weight~Diet + pt.time + (Diet*pt.time) + (pt.time|Chick), data=ChickWeight)
+summaru(dat.1)
+
+anova(dat.1)
+
+difflsmeans(dat.1, test.effs = "Group")
+
+reghelper::simple_slopes(dat.1)
+
+m.lst.1 <- emtrends(dat.1, "Diet", var="pt.time")
+
+pairs(m.lst.1)
+
+
+
+
+
+```
+

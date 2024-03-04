@@ -1,0 +1,277 @@
+---
+title: "Assignment 9 - EFA/PCA"
+output: html_notebook
+---
+
+```{r}
+library(haven)
+library(tidyverse)
+library(psych)
+library(GPArotation)
+library(corrplot)
+```
+
+
+### Read in social relationships dataset
+```{r}
+setwd('~/Google_Drive/courses/Multivariate/homework/assignment_09/')
+getwd()
+
+hw9_df1 <- read.csv('dim_rel_scaled.csv', header=FALSE)
+#hw9_df1 <- t(hw9_df1)
+colnames(hw9_df1) <- as.character(unlist(hw9_df1[1,]))
+hw9_df1 = hw9_df1[-1, ]
+hw9_df1[2:31] <- data.matrix(hw9_df1[2:31])
+#hw9_df1 <- as.numeric(hw9_df1[2:31])
+#hw9_df1 <- as.matrix(hw9_df1)
+
+```
+
+### Are the data appropriate for factor analysis?
+```{r}
+KMO(hw9_df1[2:31])
+
+bartlett.test(hw9_df1[2:31])
+```
+The dataset is not appropriate for PCA?
+
+# How many factors to retain?
+
+## Parallel Analysis
+```{r}
+par_analysis <- fa.parallel(hw9_df1[2:31], fm = "pa", n.iter = 100)
+```
+Parallel analysis indicates that the 4-component solution is optimal
+
+
+### Output of parallel analysis only shows a subset of eigenvalues
+The following creates the full list of eigenvalues
+```{r}
+#Read names of variables in the dataframe
+names(par_analysis)
+```
+
+
+### Organize the variable labels into the same order as the output
+```{r}
+all_par_val <- data.frame(cbind(par_analysis[[1]], par_analysis[[6]], par_analysis[[5]], par_analysis[[2]], par_analysis[[4]], par_analysis[[3]]))
+
+# Rename the columns
+names(all_par_val) <- c(names(par_analysis[1]),
+                         names(par_analysis[6]),
+                         names(par_analysis[5]),
+                         names(par_analysis[2]),
+                         names(par_analysis[4]),
+                         names(par_analysis[3]))
+
+all_par_val
+```
+
+### Compute proportion of variance explained by each component individually
+```{r}
+all_par_val$pro_var_com <- all_par_val$pc.values/30
+all_par_val$pro_var_com
+```
+
+### Compute proportion of total variance explained by component solutions
+```{r}
+all_par_val$pro_cum_var_com <- cumsum(all_par_val$pro_var_com)
+all_par_val$pro_cum_var_com
+```
+
+## Very Simple Structure and Velicer's MAP analysis
+```{r}
+vss_map <- vss(hw9_df1[2:31], 10, "varimax", fm = "pc")
+vss_map
+names(vss_map)
+```
+Very simple structure indicates that 1 or 2 factors is optimal
+Velicer MAP indicates that 4 factors is optimal
+
+
+
+
+# PCA of Relationship Dimensions
+
+## Estimate 4 component solution with a varimax (orthogonal rotation)
+```{r}
+hw9_df1_4c_varimax <- principal(hw9_df1[2:31], 4, rotate = "varimax")
+
+names(hw9_df1_4c_varimax)
+
+# make a dataframe with informaiton about
+hw9_df1_4c_varimax_l_C <- data.frame(cbind(hw9_df1_4c_varimax$loadings, hw9_df1_4c_varimax$communality))
+hw9_df1_4c_varimax_l_C
+```
+
+### Loadings & communalities
+```{r}
+# add items to the dataframe
+hw9_df1_4c_varimax_l_C$item <- rownames(hw9_df1_4c_varimax_l_C)
+
+# name the variables in the dataframe
+names(hw9_df1_4c_varimax_l_C) <- c("c_load_1", "c_load_2", "c_load_3", "c_load_4", "communalities", "item")
+
+# reorder the dataframe
+hw9_df1_4c_varimax_l_C <- hw9_df1_4c_varimax_l_C[c(6, 1, 2, 3, 4, 5)] 
+hw9_df1_4c_varimax_l_C
+
+# compute the sum of squared loadings
+hw9_df1_4c_varimax_l_C$check <- hw9_df1_4c_varimax_l_C$c_load_1^2 + hw9_df1_4c_varimax_l_C$c_load_2^2
+```
+```{r}
+corrplot(data.matrix(hw9_df1_4c_varimax_l_C[,2:5]))
+```
+
+### Combine data with factor scores
+```{r}
+# combine the dataframe with the relationship and dimension items with the varimax component scores
+hw9_df1_comp <- cbind(hw9_df1[c(1,2:31)], hw9_df1_4c_varimax[30])
+hw9_df1_comp
+
+# estimate correlations between the dimensions and component scores
+comp_interp <- data.frame(cor(hw9_df1_comp[2:31], hw9_df1_comp[32:35], "na.or.complete"))
+comp_interp
+```
+
+
+
+## Estimate 4 component solution with a oblimin (oblique rotation)
+```{r}
+hw9_df1_4c_oblimin <- principal(hw9_df1[2:31], 4, rotate = "oblimin")
+
+# view "variables" within the oblimin PCA solution
+names(hw9_df1_4c_oblimin) 
+
+# Pattern loading matrix -- standardized regression coefficients for relationships between components and indicator variables
+unclass(hw9_df1_4c_oblimin$loadings)
+hw9_df1_4c_oblimin$loadings
+
+
+hw9_df1_comp_obl_CS <- cbind(hw9_df1[c(1,2:31)], hw9_df1_4c_oblimin[31])
+
+# confirm that the component scores are standardized
+describe(hw9_df1_comp_obl_CS[22:23])
+```
+
+
+### Compare results of different rotations
+```{r}
+corrplot(hw9_df1_4c_varimax$loadings)
+corrplot(hw9_df1_4c_oblimin$loadings)
+```
+
+
+
+
+```{r}
+# Estimate and summarize the regression relationships between component scores and cesd items
+summary(lm(Negotiation ~ scores.TC1 + scores.TC2 + scores.TC3 + scores.TC4, hw9_df1_comp_obl_CS))
+summary(lm(Equality ~ scores.TC1 + scores.TC2 + scores.TC3 + scores.TC4, hw9_df1_comp_obl_CS))
+summary(lm(Endurance ~ scores.TC1 + scores.TC2 + scores.TC3 + scores.TC4, hw9_df1_comp_obl_CS))
+```
+
+
+### Bivariate relationships between component scores 
+```{r}
+# Loadings equivalent to bivariate associations between item and component score
+hw9_df1_4c_oblimin$Structure 
+
+hw9_df1_comp_obl_CS <- cbind(hw9_df1[c(1,2:31)], hw9_df1_4c_oblimin[31])
+
+# Structure Loadings = correlations between items and components
+comp_interp <- data.frame(cor(hw9_df1_comp_obl_CS[2:31], hw9_df1_comp_obl_CS[22:23], "na.or.complete")) 
+comp_interp   
+```
+
+## A custom function to estimate a PCA for a specific number of components. 
+This function writes output as new objects into the environment
+```{r}
+pca_est <- function(x) {
+  txt.read.in.data <- paste0("hw9_df1_",formatC(x),"c_oblimin <<- principal(hw9_df1[2:31], ",formatC(x),", rotate = 'oblimin')")
+  eval(parse(text=txt.read.in.data))
+}
+```
+
+### Create sequence of intergers to pass to the function
+```{r}
+comp_num <- seq(1, 5, 1)
+```
+
+### Execute PCA function for 1 to 5 component solutions
+```{r}
+lapply(comp_num, pca_est)
+```
+
+
+# PCA Replication
+Th package used in this analysis was recommended by our collaborator
+https://github.com/Summer-MIND/mind_2019/tree/master/tutorials/dimensionality_reduction
+
+```{r}
+library(factoextra)
+library(lattice)
+library(tidyverse)
+library(gridExtra)
+library(viridis)
+library(corrplot)
+library(psych)
+theme_set(theme_minimal())
+theme_update(
+text = element_text(size = 20)
+)
+```
+
+```{r}
+dim_rel_scaled = read.csv('dim_rel_scaled.csv', row.names=1)
+
+
+pca.res <- prcomp(dim_rel_scaled)
+summary(pca.res)
+```
+
+## Perform PCA with Varimax Rotation
+```{r}
+pv <- principal(dim_rel_scaled, 4, rotate="varimax")
+pv
+```
+
+## Screeplot and Loadings
+```{r}
+fviz_eig(pca.res) + ggtitle("") +
+theme(text = element_text(size = 20))
+
+pca_loadings = pca.res$rotation
+corrplot(pca_loadings[,1:4])
+```
+
+
+## Correlation Circle
+Arrow lengths indicate loading scores, where the x-value of an arrow is the loading on the x-component
+```{r}
+fviz_pca_biplot(pca.res, axes=c(1,2), geom = "point",
+labelsize = 3, col.var = "#c07d44") +
+coord_fixed() + ggtitle("") +
+theme(text = element_text(size = 25))
+
+
+fviz_pca_biplot(pca.res, axes=c(3,4), geom = "point",
+labelsize = 3, col.var = "#c07d44") +
+coord_fixed() + ggtitle("") +
+theme(text = element_text(size = 25))
+```
+
+
+## Relationship Scatterplot
+Each data point represents the score for the components on the x and y axis
+```{r}
+options(warn=-1)
+
+fviz_pca_ind(pca.res, labelsize=2) +
+    coord_fixed() + theme(text = element_text(size = 25))
+
+fviz_pca_ind(pca.res, axes=c(3,4), labelsize=2) +
+    coord_fixed() + theme(text = element_text(size = 25))
+```
+
+

@@ -1,0 +1,64 @@
+# Assignment 3
+
+#Load necessary packages
+library(haven)
+library(tidyverse)
+library(psych)
+library(stargazer)
+
+setwd("~/Google_Drive/courses/Multivariate/homework/assignment_03//")
+getwd()
+
+# Read in data
+h3_data <- read_sav('Assignment 3 Data.sav')
+names(h3_data)
+str(h3_data)
+
+
+# Recode intervention group variable into a four-level categorical variable
+h3_data$group_cat[h3_data$GROUP == 1]  <- "both"
+h3_data$group_cat[h3_data$GROUP == 2]  <- "individual"
+h3_data$group_cat[h3_data$GROUP == 3] <- "group"
+h3_data$group_cat[h3_data$GROUP == 4] <- "no intervention"
+
+
+# Initial comparison using ANOVA
+h3_mod1 <- aov(POSTREAD ~ group_cat, h3_data)
+summary(h3_mod1)
+
+# Pairwise comparisone using Tukey's HSD Test
+TukeyHSD(h3_mod1)
+
+# Comparison using LM function
+h3_mod2 <- lm(POSTREAD ~ group_cat, h3_data)
+summary(h3_mod2)
+
+
+#Creating dummy codes for "under the hood" regression models; reference category is no intervention
+h3_data$ps_gvb[h3_data$group_cat == "individual" | h3_data$group_cat == "no intervention" | h3_data$group_cat == "both"] <- 0
+h3_data$ps_gvb[h3_data$group_cat == "group"] <- 1
+h3_data$ps_ivb[h3_data$group_cat == "group" | h3_data$group_cat == "no intervention" | h3_data$group_cat == "both"]<- 0
+h3_data$ps_ivb[h3_data$group_cat == "individual"] <- 1
+h3_data$ps_nvb[h3_data$group_cat == "group" | h3_data$group_cat == "individual" | h3_data$group_cat == "both"] <- 0
+h3_data$ps_nvb[h3_data$group_cat == "no intervention"] <- 1
+
+#LM With Dummy Codes
+h3_mod3 <- lm(POSTREAD ~ ps_gvb + ps_ivb + ps_nvb, h3_data)
+summary(h3_mod3)
+
+h3_mod4 <- lm(POSTREAD ~ ps_ivb + ps_gvb + ps_nvb, h3_data)
+summary(h3_mod4)
+
+h3_mod5 <- lm(POSTREAD ~ ps_nvb + ps_gvb + ps_ivb, h3_data)
+summary(h3_mod5)
+
+
+# Examine the influence of treatment condition accounting for 
+# pre-treatment reading, participant age, and intellectual functioning scores
+mr_h3.m1 <- lm(POSTREAD ~ group_cat + PREREAD + AGE + IQ, h3_data)
+summary(mr_h3.m1)
+
+stargazer(mr_h3.m1, type = "text", title = "Intervention Group and Reading Test Scores", 
+          single.row = T,  out="question2_output.htm")
+
+

@@ -1,0 +1,452 @@
+---
+title: "Assignment 6 - Measurement invariance for well-being across sex"
+output: html_notebook
+---
+
+```{r}
+library(psych)
+library(MVN)
+library(lavaan)
+library(lavaanPlot)
+library(tidyverse)
+library(apaTables)
+library(patchwork)
+library(semTools)
+library(corrplot)
+```
+
+```{r}
+setwd('~/Google_Drive/courses/Structural_Equation_Modeling/assignments/assignment_06/')
+getwd()
+```
+
+
+Import data
+```{r}
+cl7_df1 <- read.delim('s6.9 Class 6. Mult Grp - Simulation.dat',
+                      header = F, sep = "")
+
+names(cl7_df1) <- c("SP_COMP", "SP_ABL1", "SP_ABL2", "SP_INTER", "WB1", "WB2", "WB3", "WB4", "Female")
+```
+
+```{r}
+corr_mtx <- apa.cor.table(cl7_df1)
+corr_mtx
+```
+
+
+### Rather than creating two separate dataframes, we'll work with subsetting the dataframe and keep it in tact
+```{r}
+trim_fit <- function(inp, outname) {
+  #Multiple steps to get smaller amount of information
+  fit_res <- data.frame(fitMeasures(inp))
+  fit_res <- round(fit_res, 3)
+  fit_res$index <- row.names(fit_res)
+  #rownames(fit_res) <- c()
+  
+#  Retaining only the commonly used indices; the last '[c(2,1)]' just changes the 
+#  order of the columns
+  out <- fit_res[fit_res$index %in% c("npar", "chisq", "df", "pvalue",
+                                          "rmsea", "rmsea.ci.lower", "rmsea.ci.upper",
+                                          "rmsea.pvalue", "cfi", "tli", "aic", "bic", "bic2"),][c(2,1)]
+  names(out) <- c("index", "value")
+  assign(deparse(substitute(outname)), out, envir=.GlobalEnv)
+}
+```
+
+# Well-Being
+## Configural invariance model
+```{r}
+Wellb_mod_mg <- 'Wellb =~ NA*WB1 + WB2 + WB3 + WB4
+                   Wellb ~~ 1*Wellb'
+
+Wellb_Configural_res <- sem(Wellb_mod_mg, cl7_df1, group = "Female")
+Wellb_Configural_res
+```
+### Model fit information
+```{r}
+trim_fit(Wellb_Configural_res, Wellb_Configural_res_fit)
+
+#View model fit information
+Wellb_Configural_res_fit
+```
+
+### Parameter Estimates
+```{r}
+parameterestimates(Wellb_Configural_res, ci = F, standardized = T)
+```
+Well being latent factor is fixed at both places. By default, latent variable means are fixed at 0.
+
+### lavaan plot
+```{r}
+wellb_conf_fig <- lavaanPlot(model = Wellb_Configural_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+wellb_conf_fig
+```
+
+## Metric invariance model
+```{r}
+Wellb_mod_mg_met <- 'Wellb =~ c(NA, NA)*WB1 + c(l1, l1)*WB1 + c(l2, l2)*WB2 + c(l3, l3)*WB3 + c(l4, l4)*WB4
+                   Wellb ~~ c(1, NA)*Wellb'
+
+Wellb_Metric_res <- sem(Wellb_mod_mg_met, cl7_df1, group = "Female")
+```
+### Model fit information
+```{r}
+trim_fit(Wellb_Metric_res, Wellb_Metric_res_fit)
+
+#View model fit information
+Wellb_Metric_res_fit
+```
+### Parameter estimates
+```{r}
+parameterestimates(Wellb_Metric_res, ci = F, standardized = T)
+```
+
+### lavaan plot
+```{r}
+wellb_metr_fig <- lavaanPlot(model = Wellb_Metric_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+wellb_metr_fig
+```
+
+
+## Scalar invariance model
+```{r}
+Wellb_mod_mg_scalar <- 'Wellb =~ c(NA, NA)*WB1 + c(l1, l1)*WB1 + c(l2, l2)*WB2 + c(l3, l3)*WB3 + c(l4, l4)*WB4
+                   Wellb ~~ c(1, NA)*Wellb
+                   WB1 ~ c(i1, i1)*1
+                   WB2 ~ c(i2, i2)*1
+                   WB3 ~ c(i3, i3)*1
+                   WB4 ~ c(i4, i4)*1
+                   Wellb ~ c(0, NA)*1'
+
+Wellb_Scalar_res <- sem(Wellb_mod_mg_scalar, cl7_df1, group = "Female")
+```
+### Model fit information
+```{r}
+trim_fit(Wellb_Scalar_res, Wellb_Scalar_res_fit)
+
+#View model fit information
+Wellb_Scalar_res_fit
+```
+### Parameter Estimates
+```{r}
+parameterestimates(Wellb_Scalar_res, ci = F, standardized = T)
+```
+
+### lavaan plot
+```{r}
+wellb_scal_fig <- lavaanPlot(model = Wellb_Scalar_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+wellb_scal_fig
+```
+
+## Pulling all model fit together
+```{r}
+all_Wellb_fit <- cbind(Wellb_Configural_res_fit, Wellb_Metric_res_fit[2], Wellb_Scalar_res_fit[2])
+names(all_Wellb_fit) <- c("Index", "Configural Model", "Metric Model", "Scalar Model")
+write.table(all_Wellb_fit, "models_fit.csv", sep=",")
+all_Wellb_fit
+```
+
+
+
+# Sports
+## Configural invariance model
+```{r}
+cl7_Sports_mod_mg <- 'Sports =~ NA*SP_COMP + SP_ABL1 + SP_ABL2 + SP_INTER
+                   Sports ~~ 1*Sports'
+
+cl7_Sports_Configural_res <- sem(cl7_Sports_mod_mg, cl7_df1, group = "Female")
+```
+
+### Model fit information
+```{r}
+trim_fit(cl7_Sports_Configural_res, cl7_Sports_Configural_res_fit)
+
+#View model fit information
+cl7_Sports_Configural_res_fit
+```
+
+### Parameter Estimates
+```{r}
+parameterestimates(cl7_Sports_Configural_res, ci = F, standardized = T)
+```
+
+### lavaan plot
+```{r}
+sports_conf_fig <- lavaanPlot(model = cl7_Sports_Configural_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+sports_conf_fig
+```
+
+## Metric invariance model
+```{r}
+cl7_Sports_mod_mg_met <- 'Sports =~ c(NA, NA)*SP_COMP + c(l1, l1)*SP_COMP + c(l2, l2)*SP_ABL1 + c(l3, l3)*SP_ABL2 + c(l4, l4)*SP_INTER
+                   Sports ~~ c(1, NA)*Sports'
+
+cl7_Sports_Metric_res <- sem(cl7_Sports_mod_mg_met, cl7_df1, group = "Female")
+```
+
+### Model fit information
+```{r}
+trim_fit(cl7_Sports_Metric_res, cl7_Sports_Metric_res_fit)
+
+#View model fit information
+cl7_Sports_Metric_res_fit
+```
+
+### Parameter estimates
+```{r}
+parameterestimates(cl7_Sports_Metric_res, ci = F, standardized = T)
+```
+
+### lavaan plot
+```{r}
+sports_metr_fig <- lavaanPlot(model = cl7_Sports_Metric_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+sports_metr_fig
+```
+
+## Scalar invariance model
+```{r}
+cl7_Sports_mod_mg_scalar <- 'Sports =~ c(NA, NA)*SP_COMP + c(l1, l1)*SP_COMP + c(l2, l2)*SP_ABL1 + c(l3, l3)*SP_ABL2 + c(l4, l4)*SP_INTER
+                   Sports ~~ c(1, NA)*Sports
+                   SP_COMP ~ c(i1, i1)*1
+                   SP_ABL1 ~ c(i2, i2)*1
+                   SP_ABL2 ~ c(i3, i3)*1
+                   SP_INTER ~ c(i4, i4)*1
+                   Sports ~ c(0, NA)*1'
+
+cl7_Sports_Scalar_res <- sem(cl7_Sports_mod_mg_scalar, cl7_df1, group = "Female")
+```
+### Model fit information
+```{r}
+trim_fit(cl7_Sports_Scalar_res, cl7_Sports_Scalar_res_fit)
+
+#View model fit information
+cl7_Sports_Scalar_res_fit
+```
+### Parameter Estimates
+```{r}
+parameterestimates(cl7_Sports_Scalar_res, ci = F, standardized = T)
+```
+
+### lavaan plot
+```{r}
+sports_scal_fig <- lavaanPlot(model = cl7_Sports_Scalar_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+sports_scal_fig
+```
+
+## Pulling all model fit together
+```{r}
+all_Sports_fit <- cbind(cl7_Sports_Configural_res_fit, cl7_Sports_Metric_res_fit[2], cl7_Sports_Scalar_res_fit[2])
+names(all_Sports_fit) <- c("Index", "Configural Model", "Metric Model", "Scalar Model")
+write.table(all_Sports_fit, "models_fit_sports.csv", sep=",")
+all_Sports_fit
+```
+
+## Partial Metric Invariance
+```{r}
+cl7_Sports_mod_mg_p_met <- 'Sports =~ c(NA, NA)*SP_COMP + c(l1, l1)*SP_COMP + c(l2, l2)*SP_ABL1 + c(l3, l3)*SP_ABL2 + SP_INTER
+                   Sports ~~ c(1, NA)*Sports'
+
+cl7_Sports_Part_Metric_res <- sem(cl7_Sports_mod_mg_p_met, cl7_df1, group = "Female")
+```
+
+### Model fit information
+```{r}
+trim_fit(cl7_Sports_Part_Metric_res, cl7_Sports_Part_Metric_res_fit)
+
+#View model fit information
+cl7_Sports_Part_Metric_res_fit
+```
+
+### Parameter estimates
+```{r}
+parameterestimates(cl7_Sports_Part_Metric_res, ci = F, standardized = T)
+```
+
+### lavaan plot
+```{r}
+sports_pmetr_fig <- lavaanPlot(model = cl7_Sports_Part_Metric_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+sports_pmetr_fig
+```
+
+## Partial Scalar Invariance
+```{r}
+cl7_Sports_mod_mg_p_scalar <- 'Sports =~ c(NA, NA)*SP_COMP + c(l1, l1)*SP_COMP + c(l2, l2)*SP_ABL1 + c(l3, l3)*SP_ABL2 + SP_INTER
+                   Sports ~~ c(1, NA)*Sports
+                   SP_COMP ~ c(i1, i1)*1
+                   SP_ABL1 ~ c(i2, i2)*1
+                   SP_ABL2 ~ c(i3, i3)*1
+                   SP_INTER ~ 1
+                   Sports ~ c(0, NA)*1'
+
+cl7_Sports_Part_scalar_res <- sem(cl7_Sports_mod_mg_p_scalar, cl7_df1, group = "Female")
+```
+
+### Model fit information
+```{r}
+trim_fit(cl7_Sports_Part_scalar_res, cl7_Sports_Part_scalar_res_fit)
+
+#View model fit information
+cl7_Sports_Part_scalar_res_fit
+```
+
+### Parameter Estimates
+```{r}
+parameterestimates(cl7_Sports_Part_scalar_res, ci = F, standardized = T)
+```
+
+## Pulling all model fit together; With Partial invariance
+```{r}
+all_Sports_fit_with_partial <- cbind(cl7_Sports_Configural_res_fit, cl7_Sports_Metric_res_fit[2], cl7_Sports_Part_Metric_res_fit[2], 
+                        cl7_Sports_Scalar_res_fit[2], cl7_Sports_Part_scalar_res_fit[2])
+names(all_Sports_fit_with_partial) <- c("Index", "Configural Model", "Metric Model", "Partial Metric Model", "Scalar Model", "Partial Scalar Model")
+write.table(all_Sports_fit_with_partial, "models_fit_sports_partial.csv", sep=",")
+
+all_Sports_fit_with_partial
+```
+
+
+# Moderation
+```{r}
+mod_sports_wellb <- 'Sports =~ c(NA, NA)*SP_COMP + c(l1, l1)*SP_COMP + c(l2, l2)*SP_ABL1 + c(l3, l3)*SP_ABL2 + SP_INTER
+                   Wellb =~ c(NA, NA)*WB1 + c(l1, l1)*WB1 + c(l2, l2)*WB2 + c(l3, l3)*WB3 + c(l4, l4)*WB4
+                   
+                   Sports ~~ c(1, NA)*Sports
+                   SP_COMP ~ c(i1, i1)*1
+                   SP_ABL1 ~ c(i2, i2)*1
+                   SP_ABL2 ~ c(i3, i3)*1
+                   SP_INTER ~ 1
+                   Sports ~ c(0, NA)*1
+
+                   Wellb ~~ c(1, NA)*Wellb
+                   WB1 ~ c(i1, i1)*1
+                   WB2 ~ c(i2, i2)*1
+                   WB3 ~ c(i3, i3)*1
+                   WB4 ~ c(i4, i4)*1
+                   Wellb ~ c(0, NA)*1
+                   
+                   Wellb ~ Sports'
+
+mod_sports_wellb_res <- sem(mod_sports_wellb, cl7_df1, group="Female")
+```
+
+### Model fit information
+```{r}
+trim_fit(mod_sports_wellb_res, mod_sports_wellb_res_fit)
+
+#View model fit information
+mod_sports_wellb_res_fit
+```
+
+
+### Parameter Estimates
+```{r}
+parameterestimates(mod_sports_wellb_res, ci = F, standardized = T)
+```
+
+### lavaan plot
+```{r}
+sports_wellb_mod_fig <- lavaanPlot(model = mod_sports_wellb_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+sports_wellb_mod_fig
+```
+
+
+## Moderation with contrained factors
+
+```{r}
+mod_sports_wellb_con <- "#partial scalar invariance model for Sports factor
+                  Sports =~ c(NA, NA)*SP_COMP + c(l1, l1)*SP_COMP + c(l2, l2)*SP_ABL1 + c(l3, l3)*SP_ABL2 + SP_INTER
+                  Sports ~~ c(1, NA)*Sports
+                  SP_COMP ~ c(i1, i1)*1
+                  SP_ABL1 ~ c(i2, i2)*1
+                  SP_ABL2 ~ c(i3, i3)*1
+                  SP_INTER ~ 1
+                  Sports ~ c(0, NA)*1
+
+                  #full scalar invariance model for Well-Being factor
+                  WellBeing =~ c(NA, NA)*WB1 + c(l4, l4)*WB1 + c(l5, l5)*WB2 + c(l6, l6)*WB3 + c(l7, l7)*WB4
+                  WellBeing ~~ c(1, NA)*WellBeing
+                  WB1 ~ c(i4, i4)*1
+                  WB2 ~ c(i5, i5)*1
+                  WB3 ~ c(i6, i6)*1
+                  WB4 ~ c(i7, i7)*1
+                  WellBeing ~ c(0, NA)*1
+
+                  #latent variable regression
+                  WellBeing ~ c(l8, l8)*Sports" #constrain male and females loadings to be equal
+mod_sports_wellb_con_res <- sem(mod_sports_wellb_con, cl7_df1, group="Female")
+```
+
+### Model fit information
+```{r}
+trim_fit(mod_sports_wellb_con_res, mod_sports_wellb_con_res_fit)
+
+#View model fit information
+mod_sports_wellb_con_res_fit
+```
+
+### Pulling all model fit together
+```{r}
+all_mod_fit <- cbind(mod_sports_wellb_res_fit, mod_sports_wellb_con_res_fit[2])
+names(all_mod_fit) <- c("Index", "Unconstrained", "Constrained")
+write.table(all_mod_fit, "models_fit_moderation_con.csv", sep=",")
+
+all_mod_fit
+```
+
+
+### Parameter Estimates
+```{r}
+parameterestimates(mod_sports_wellb_con_res, ci = F, standardized = T)
+```
+
+
+### lavaan plot
+```{r}
+sports_wellb_mod_con_fig <- lavaanPlot(model = mod_sports_wellb_con_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 1.00, covs = T, stars = c("regress", "latent"))
+sports_wellb_mod_con_fig
+```
+
+
+## Chi-Square Difference Test
+```{r}
+anova(mod_sports_wellb_res, mod_sports_wellb_con_res)
+```
+
+

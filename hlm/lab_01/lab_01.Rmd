@@ -1,0 +1,217 @@
+---
+title: "Lab 1 - Linear Regression in R"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: word_document
+always_allow_html: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "C:/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/")
+```
+
+```{r, include=F}
+if(!require(dplyr)) install.packages("dplyr"); require(dplyr)
+if(!require(ggplot2)) install.packages("ggplot2"); require(ggplot2)
+if(!require(lavaan)) install.packages("lavaan"); require(lavaan)
+if(!require(GGally)) install.packages("GGally"); require(GGally)
+if(!require(lavaanPlot)) install.packages("lavaanPlot"); require(lavaanPlot)
+```
+
+
+```{r, echo=F}
+# Define functions
+trim_fit <- function(inp, outname) {
+  #Multiple steps to get smaller amount of information
+  fit_res <- data.frame(fitMeasures(inp))
+  fit_res <- round(fit_res, 3)
+  fit_res$index <- row.names(fit_res)
+  #rownames(fit_res) <- c()
+  
+#  Retaining only the commonly used indices; the last '[c(2,1)]' just changes the 
+#  order of the columns
+  out <- fit_res[fit_res$index %in% c("npar", "chisq", "df", "pvalue",
+                                          "rmsea", "rmsea.ci.lower", "rmsea.ci.upper",
+                                          "rmsea.pvalue", "cfi", "tli", "aic", "bic", "bic2"),][c(2,1)]
+  names(out) <- c("index", "value")
+  assign(deparse(substitute(outname)), out, envir=.GlobalEnv)
+}
+```
+
+
+```{r, echo=F, warning=F}
+#if(!require(FactoMineR)) install.packages("FactoMineR"); require(FactoMineR)
+
+setwd("/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/")
+getwd()
+```
+
+
+# Research Question
+Interpersonal relationships have significant implications for perception, emotion, memory, motivation, and decision-making. In a long term perspective, having strong social relationships are important for personal success, health and well-being. One theory proposes that humans have a unique ability to track a large number of social relationships, which have allowed us to live in large groups and societies. As humans enjoy very diverse social lives across their family life, careers, friends, communities, and social media, the research question this project attempts to address is what is the impact of a decrease in the typical number and variety of social relationships on mental health. 
+
+
+# Data Source
+Participants were recruited from Amazon Mechnical Turk (mTurk). mTurk is hosted by Amazon and provides an online platform for individuals (mTurkers) to partake in surveys. Use of mTurk has become popular in psychology research, as it allows for larger sample sizes than what can be typically collected in a lab setting. A link to the survey was posted on mTurk using turkprime.com. The use of "bots" to pose as real participants has been an issue with mTurk, and turkprime has a system that catches and excludes some of these bots. Participants from across the United States were eligible to take the survey. An additional eligibility criteria was that participants must have learned English as their first language. This is due to cultural differences in social relationships, which we believe exist but are unable to directly address. In total, 768 participants completed the survey at the first time point which will be analyzed here.
+
+# Dropped Cases
+After excluding six participants who failed attention check questions (questions which have an obvious answer such as selecting which of five items is typically red), and 34 participants who did not follow directions in how to answer questions (participants need to respond in a specific syntax so that their responses could be easily captured), 728 participants from the first time point were included for the analysis. 
+
+
+# Variables
+This study includes variables that can be grouped as predictors, outcomes, and nuisance variables. The outcome we measured was a latent factor of mental well-being, derived from measures of anxiety, behavioral/emotional control, depression, calm-positive affect, and happy/positive affect. These five variables were measured by asking participants whether they felt each factor much less, less, about the same, more, or much more in the past week. The predictors of interest were the number of social relationships, the variety of social relationship, and the quality of social relationships they experienced in the past week. Participants were asked to report each person they interacted with in the past week, and their relationship to that person, results in their number of relationships (i.e. 10 relationships), and variety of relationship (i.e. 5 unique relationships) reported. They were also asked to rate how positive or negative each relationship was on a scale of one to five indicating very negative, negative, neutral, positive, or very positive. Nuisance variables were environmental richness, measured by a report of how much they traveled outside of their home in the past week, and physical well-being, measured by a report of how they feel similar to the mental well-being questions).
+
+```{r color}
+   knitr::include_graphics("/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/path_analysis.png")
+```
+\n
+**Figure 1. Proposed path analysis**
+We hypothesize that a latent factor of mental well-being will be significantly predictive of anxiety, behavioral/emotional control, depression, calm positive affect, and happy positive affect. We further hypothesize that features of social relationships that individuals experience at home will be predictive of the latent factor of mental well-being. 
+
+
+## Variable definitions
+```{r}
+# Import data
+responses_excluded <- read.csv('/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/survey_data/responses_excluded.csv')
+
+# Filter wave data into two different dataframes
+wave1_data <- responses_excluded[responses_excluded$wave == 1,]
+wave2_data <- responses_excluded[responses_excluded$wave == 2,]
+
+#well_being <- responses_excluded %>% select(depression, anxiety)
+```
+
+```{r}
+
+model1_data <- wave1_data %>% select(INS, IN_URels, IN_valw, anxiety, depression, behav_emo_control, pos_affect_calm, pos_affect_happy, bored, do_interests, regulation, routine, health)
+```
+
+
+## Latent variable
+Create a latent variable of well-being from the five mental health questions. This latent variable will serve as a predictor of the mental health outcomes, and an outcome of the social relationship variables. 
+```{r}
+wellb_mod_mg <- 'Wellb =~ NA*anxiety + pos_affect_calm + depression + pos_affect_happy + behav_emo_control
+                   Wellb ~~ 1*Wellb'
+
+wellb_configural_res <- sem(wellb_mod_mg, model1_data, estimator='wlsmv')
+model1_data$wellb_lv <- as.numeric(predict(wellb_configural_res))
+```
+
+
+# Scatterplot Matrix
+Scatterplot matrix for outcome variable of well-being and predictors.
+```{r, warning=F, fig.width = 8, fig.height = 8}
+ggpairs(model1_data[c('INS', 'IN_URels', 'IN_valw', 
+                      'wellb_lv',
+                      'anxiety', 'depression', 'behav_emo_control', 'pos_affect_calm', 'pos_affect_happy')], missing='exclude')
+```
+\n
+**Figure 2. Scatterplot matrix of outcome and predictors.**
+
+# Distribution of Outcome
+```{r}
+ggplot(model1_data, aes(x=wellb_lv)) + geom_histogram(binwidth = 0.5) + 
+  theme_minimal() + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("Distribution of the Outcome Varible") +
+  xlab("Mental Well-ebing") + ylab("Count")
+```
+\n
+**Figure 3. Histogram of the mental well-being outcome variable.**
+
+# Summary Statistics
+```{r, echo=F, results=F}
+summary(model1_data, missing='exclude')
+sapply(model1_data, sd, na.rm = TRUE)
+```
+
+# Regression Table
+```{r, results=F}
+Wellb_mod_mg <- 'Wellb =~ NA*anxiety + pos_affect_calm + depression + pos_affect_happy + behav_emo_control
+                   Wellb ~~ 1*Wellb
+                 
+                 Wellb ~ INS + IN_URels + IN_valw + bored + do_interests + regulation + routine + health
+                 INS ~~ INS
+                 IN_URels ~~ IN_URels
+                 IN_valw ~~ IN_valw
+                 bored ~~ bored
+                 do_interests ~~ do_interests
+                 regulation ~~ regulation
+                 routine ~~ routine
+                 health ~~ health'
+
+Wellb_Configural_res <- sem(Wellb_mod_mg, model1_data, estimator='wlsmv')
+Wellb_Configural_res
+```
+
+## Model fit information
+```{r}
+trim_fit(Wellb_Configural_res, Wellb_Configural_res_fit)
+
+#View model fit information
+Wellb_Configural_res_fit
+```
+Model fit is poor, but not horrible. Results should be cautiously considered
+
+
+## Parameter Estimates
+```{r}
+parameterestimates(Wellb_Configural_res, ci = F, standardized = T)
+```
+
+
+The well-being latent factor has a positive relationship with anxiety, depression, and behavioral/emotional control, and a negative relationship with calm positive affect and happy positive affect. Therefore, a greater well-being score means being worse.
+
+Only the measure of time-weighted immediate network valence was significantly related to well-being. A 0.38 decrease in network valence results in a unit increase in well-being score (worse well-being).
+
+
+## lavaan plot
+```{r}
+wellb_conf_fig <- lavaanPlot(model = Wellb_Configural_res, 
+           node_options = list(shape = "box", fontname = "Helvetica"), 
+           edge_options = list(color = "grey"), 
+           graph_options = list(layout = "dot", rankdir = "TB"),
+           coefs = T, stand = F, sig = 0.05, covs = T, stars = c("regress", "latent"))
+wellb_conf_fig
+```
+\n
+**Figure 4. Path analysis results indicating significant paths.**
+
+# Write-up
+## Immediate Network Relationship Valence Predicts Well-being
+A path analysis was done to test whether changes in social relationships due to social distancing measures was related to a latent variable of well-being. Overall, the model fit for this analysis was poor, with a significant chi-square (2 = 307.88, p < .001), low CFI (0.87), low TLI (0.84), and a high RMSEA (0.09, CI [0.08 0.10]). 
+
+The latent variable of well-being was significantly related to each of the five mental health items in the model. Higher well-being was related to higher levels of anxiety, depression, and behavioral/emotional control issues, and lower levels of calm and happy positive affect. The well-being latent variable was then used as a dependent variable for the predictors of immediate network size, number of unique relationships, time-weighted immediate network valence, and the nuisance variables of boredom, ability to do interests, regulation of emotions, ability to due normal routine, and general physical heatlh. Immediate network size and number of unique relationships were not significant predictors of well-being, but time-weighted immediate network valence was, despite the five nuisance variables also significantly predicting mental well-being (Table 2; Fig. 4). More time spent with negatively valanced relationships was predictive of higher levels of the well-being latent factor, which was related to higher levels of anxiety, depression, behavioral/emotional control issues, and lowers levels of calm and happy positive affect (Fig. 5). Specifically, a 0.38 decrease in the average valence of relationships in one's immediate network was indicative of a one unit increase in worse mental well-being. 
+
+
+
+
+# Graph
+```{r, warning=F}
+ggplot(model1_data, aes(x=IN_valw, y=wellb_lv)) +
+  geom_point() + 
+  geom_smooth(method='lm') + 
+  theme_minimal() + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle("Social Relationship Valence Effect On Mental Well-being") +
+  xlab("Time-weighted Relationship Valence") + ylab("Mental Well-being")
+```
+\n
+**Figure 5. Relationship between immediate network relationship valence and mental well-being.**
+
+
+# Appendix
+
+
+# Glaring Errors
+
+
+
+
+
+
+
+
+
+

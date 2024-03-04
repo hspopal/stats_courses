@@ -1,0 +1,119 @@
+---
+title: "Assignment 2 - Path Analysis"
+output: html_notebook
+---
+
+```{r}
+#library(MVN)
+library(lavaan)
+library(haven)
+library(semPlot)
+```
+
+```{r}
+setwd('~/Google_Drive/courses/Structural_Equation_Modeling/assignments/assignment_02/')
+getwd()
+```
+
+# Replicating Path Analysis from Sexton et al., (2003)
+[link to article](https://www.tandfonline.com/doi/abs/10.1080/16506070302321)
+
+## Create a correlation matrix and a covariance matrix
+```{r}
+# Input information to create the matrix of information; notice that it is a square matrix with 1s on the diagonal
+hw2_cor_mat <- matrix(c(1, .566, .534, .580, .414, .374, .665,
+                        .566, 1, .487, .549, .583, .478, .535, 
+                        .534, .487, 1, .429, .273, .284, .569, 
+                        .580, .549, .429, 1, .492, .443, .554, 
+                        .414, .583, .273, .492, 1, .411, .546,
+                        .374, .478, .284, .443, .411, 1, .332,
+                        .665, .535, .569, .554, .546, .332, 1), 
+                    nrow = 7, ncol = 7)
+
+# A numeric vector of the SDs of the variables
+var_sds <- c(9.40, 23.34, 18.05, 9.11, 13.77, 15.20, 14.89)
+
+# A list of the variable names for the matrix
+var_names = c("NEO_N", "ASI_R", "IUS", "BAI", "IAS", "PI_WSUR", "PSWQ")
+
+# Putting all of the information together to make a covariance matrix
+hw2_cov <- cor2cov(hw2_cor_mat, var_sds, names = var_names)
+hw2_cov
+```
+
+
+## Replicate regression analysis
+I was having trouble replicating the entire hierarchical analysis, so I decided to just do one arm of the analysis.
+```{r}
+# Define the model of interest
+hw2_m1 <- 'BAI ~ ASI_R + NEO_N + IUS
+           ASI_R ~ NEO_N
+           IUS ~ NEO_N'
+
+# Estimate the model
+hw2_m1_fit <- sem(hw2_m1, sample.cov = hw2_cov, sample.nobs = 91)
+
+# Examine initial model fit information
+hw2_m1_fit
+
+# Examine more information
+summary(hw2_m1_fit)
+```
+There was a failure to completely replicated the findings in Sexton et al. (2003). The betas of the replication analysis are very different from the betas in the hierarchical path analysis from the original paper. What is consistent, however, is the significant paths. Panic symptoms (BAI) is predicted by anxiety sensitivity (ASI_R) and neuroticism (NEO_N), but not by intolerance of uncertainty (IUS). This could be due to missing variance from the item level data for participants. The individual differences are not fully captured by the univariate standard deviation, nor the correlation matrix or resulting covariance matrix. 
+
+
+
+# Path Analysis on Observed Data
+
+```{r}
+## Load dataframe of raw data
+hw2_df <- read.csv('../unrestricted_hspopal_9_9_2019_22_40_57.csv')
+
+```
+
+## Information about the dataset
+This dataset is the Human Connectome Project data for healthy young adults. I will be looking at neuroticism from the NEO-PI, a measure of theory of mind, a measure of friendship, and a measure of angry affect.
+
+# Estimate using FIML
+```{r}
+hw2_m2 <- 'NEOFAC_O ~ Social_Task_Perc_TOM + Friendship_Unadj + AngAffect_Unadj
+           NEOFAC_N ~ Social_Task_Perc_TOM + Friendship_Unadj + AngAffect_Unadj
+           Friendship_Unadj ~~ AngAffect_Unadj
+           Friendship_Unadj ~~ Social_Task_Perc_TOM
+           Social_Task_Perc_TOM ~~ AngAffect_Unadj'
+
+# Estimation of FIML model
+hw2_m2_fit <- sem(hw2_m2, hw2_df, missing = "fiml")
+
+## Model Information FIML model
+summary(hw2_m2_fit)
+```
+
+## Figure of model
+```{r}
+semPaths(hw2_m2_fit, "path", whatLabels = "est", 
+         edge.label.cex = 1, rotation = 2, intercepts = FALSE, residuals = TRUE, curve = 1, 
+         curvature = 3, nCharNodes = 8, sizeMan = 6, sizeMan2 = 3, optimizeLatRes = TRUE, edge.color = "#000000")
+```
+
+# Estimate without using FIML
+```{r}
+hw2_m3 <- 'NEOFAC_O ~ Social_Task_Perc_TOM + Friendship_Unadj + AngAffect_Unadj
+           NEOFAC_N ~ Social_Task_Perc_TOM + Friendship_Unadj + AngAffect_Unadj'
+
+# Estimation of FIML model
+hw2_m3_fit <- sem(hw2_m3, hw2_df)
+
+## Model Information FIML model
+summary(hw2_m3_fit)
+```
+
+Running this analysis with FIML and without resulted in slightly different betas. Some predictors were also not significant when FIML was not done.
+
+## Figure of model
+```{r}
+semPaths(hw2_m3_fit, "path", whatLabels = "est", 
+         edge.label.cex = 1, rotation = 2, intercepts = FALSE, residuals = TRUE, curve = 1, 
+         curvature = 3, nCharNodes = 8, sizeMan = 6, sizeMan2 = 3, optimizeLatRes = TRUE, edge.color = "#000000")
+```
+

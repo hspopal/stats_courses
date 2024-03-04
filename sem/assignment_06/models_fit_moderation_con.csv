@@ -1,0 +1,14 @@
+"Index","Unconstrained","Constrained"
+"npar","npar",34,39
+"chisq","chisq",207.794,50.848
+"df","df",54,49
+"pvalue","pvalue",0,0.401
+"cfi","cfi",0.932,0.999
+"tli","tli",0.929,0.999
+"aic","aic",12435.431,12288.484
+"bic","bic",12566.601,12438.944
+"bic2","bic2",12458.741,12315.222
+"rmsea","rmsea",0.128,0.015
+"rmsea.ci.lower","rmsea.ci.lower",0.109,0
+"rmsea.ci.upper","rmsea.ci.upper",0.146,0.052
+"rmsea.pvalue","rmsea.pvalue",0,0.937

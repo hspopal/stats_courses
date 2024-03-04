@@ -1,0 +1,14 @@
+"Index","Configural Model","Metric Model","Scalar Model"
+"npar","npar",24,21,18
+"chisq","chisq",2.748,3.712,4.856
+"df","df",4,7,10
+"pvalue","pvalue",0.601,0.812,0.901
+"cfi","cfi",1,1,1
+"tli","tli",1.003,1.004,1.005
+"aic","aic",6304.074,6299.038,6294.183
+"bic","bic",6396.665,6380.055,6363.625
+"bic2","bic2",6320.528,6313.435,6306.523
+"rmsea","rmsea",0,0,0
+"rmsea.ci.lower","rmsea.ci.lower",0,0,0
+"rmsea.ci.upper","rmsea.ci.upper",0.096,0.058,0.035
+"rmsea.pvalue","rmsea.pvalue",0.766,0.929,0.976

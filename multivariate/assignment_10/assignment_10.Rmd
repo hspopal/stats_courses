@@ -1,0 +1,122 @@
+---
+title: "Assignment 10 - Relationship Knowledge CFA"
+output: html_notebook
+---
+
+
+```{r}
+library(haven)
+library(psych)
+library(tidyverse)
+library(lavaan)
+#library(semPlot)
+library(rowr)
+```
+
+
+### Read in data
+```{r}
+dim_rel_scaled = read.csv('dim_rel_scaled.csv', row.names=1)
+
+names(dim_rel_scaled)
+```
+
+
+## Return the covariance matrix for the lower triangle
+```{r}
+m1_cov_mat <- cov(dim_rel_scaled)
+m1_cov_mat[upper.tri(m1_cov_mat)] <- NA #Means to asign NA to the elements above the diagonal
+m1_cov_mat
+```
+
+
+## Define a model with one latent factor and estimate it
+```{r}
+hw10_m1 <- 'single_factor =~ Communal.Sharing + Endurance + Activity.Intensity + Activeness + Uniqueness + Attachment + Love.Expression + Mating + Expected.Reciprocity + Intimacy + Importance.for.individuals.involved +  Occupational + Strategic + Formality.and.Regulation + Spatial.Distance + Synchronicity + Conflict + Coercion + Negotiation + Goods.Exchange + Concreteness'
+
+hw10_m1_fit <- cfa(hw10_m1, dim_rel_scaled)
+```
+
+## Summary of fit information
+```{r}
+fitMeasures(hw10_m1_fit, c("npar", "chisq", "df", "pvalue", "cfi", "rmsea", "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue", "BIC", "AIC"))
+```
+
+## Return Coefficients for unstandardized and standardized models
+```{r}
+hw10_m1_fit_c <- parameterEstimates(hw10_m1_fit)
+                   
+hw10_m1_fit_sc <-parameterEstimates(hw10_m1_fit, standardized = T)
+hw10_m1_fit_sc
+```
+
+
+## Write model for the 3 factor model
+```{r}
+socio_indicators <- 'Socioemotional =~ Communal.Sharing + Endurance + Activity.Intensity + Activeness + Uniqueness + Attachment + Love.Expression + Mating + Expected.Reciprocity + Intimacy'
+
+exc_indicators <- 'Exchange =~ Importance.for.individuals.involved +  Occupational + Strategic + Formality.and.Regulation + Negotiation + Goods.Exchange + Concreteness'
+
+valence_indicators <- 'Valence.Evaluation =~ Spatial.Distance + Synchronicity + Conflict + Coercion'
+
+hw10_m2 <- paste(socio_indicators, exc_indicators, valence_indicators, sep = "\n")
+cat(hw10_m2)
+```
+
+
+## write model for the 4 factor model
+### Divide up exchange into information exchange and money exchange
+```{r}
+exc_opp_indicators <- 'Information.Exchange =~ Importance.for.individuals.involved +  Occupational + Strategic + Formality.and.Regulation'
+
+mon_ex_indicators <- 'Money.Exchange =~ Negotiation + Goods.Exchange + Concreteness'
+
+hw10_m3 <- paste(socio_indicators, exc_opp_indicators, valence_indicators, mon_ex_indicators, sep = "\n")
+cat(hw10_m3)
+```
+
+
+## Estimate 3 factor model
+```{r}
+hw10_m2_fit <- cfa(hw10_m2, dim_rel_scaled, mimic = "Mplus")
+```
+
+## Summary of fit information for 3 factor model
+```{r}
+hw10_m2_fit_sum <- fitMeasures(hw10_m2_fit, c("npar", "chisq", "df", "pvalue", "cfi", "rmsea", "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue", "BIC", "AIC"))
+```
+
+## Estimate 4 factor model
+```{r}
+hw10_m3_fit <- cfa(hw10_m3, dim_rel_scaled, mimic = "Mplus")
+```
+
+## Summary of fit information for 4 factor model
+```{r}
+hw10_m3_fit_sum <- fitMeasures(hw10_m3_fit, c("npar", "chisq", "df", "pvalue", "cfi", "rmsea", "rmsea.ci.lower", "rmsea.ci.upper", "rmsea.pvalue", "BIC", "AIC"))
+```
+
+
+## Put fit information together in a more helpful format
+```{r}
+round(cbind(hw10_m2_fit_sum, hw10_m3_fit_sum), 3)
+```
+
+
+## Return Coefficients for each model
+```{r}
+hw10_m2_fit_sc <-parameterEstimates(hw10_m2_fit, standardized = T)
+hw10_m3_fit_sc <-parameterEstimates(hw10_m3_fit, standardized = T)
+
+hw10_m2_m3_all_param <- cbind.fill(subset(hw10_m2_fit_sc, !(op == "~1"))[c(1:4,11)], subset(hw10_m3_fit_sc, !(op == "~1"))[c(1:4,11)], fill = "")
+write.csv(hw10_m2_m3_all_param, 'Model 2 & Model 3 Parameters.csv')
+hw10_m2_m3_all_param
+```
+
+
+
+# Results
+A confirmatory factory analysis (CFA) was done to see if multiple dimensions that can describe social relationships, can be summarized as a single latent factor. 
+
+
+

@@ -1,0 +1,96 @@
+---
+title: "Assignment 7 - Logistic Regression"
+output: html_notebook
+---
+
+
+```{r}
+library(haven)
+library(psych)
+library(tidyverse)
+library(effects)
+library(reghelper)
+```
+
+```{r}
+setwd('~/Google_Drive/courses/Multivariate/homework/assignment_07/')
+getwd()
+
+hcp_behav <- read.csv("../unrestricted_hspopal_9_9_2019_22_40_57.csv", row.names = 1, header = TRUE)
+
+#Simple Descriptive Statistics
+describe(hcp_behav)
+str(hcp_behav)
+```
+
+# Logistic Regression
+### Estimate model & View results
+```{r}
+h7m1 <- glm(Gender ~ LifeSatisf_Unadj + Friendship_Unadj, hcp_behav, family = "binomial")
+summary(h7m1)
+```
+
+### Obtain predicted probability values then plot them; defaults effects plot in base R scales information oddly
+```{r}
+h7m1_pred_x1 <- data.frame(effect("LifeSatisf_Unadj", h7m1, xlevels=list(LifeSatisf_Unadj=0:75)))
+
+h7m1_pred_x1_pl <- ggplot(h7m1_pred_x1, aes(x=LifeSatisf_Unadj, y=fit)) + geom_point() + geom_smooth() + geom_ribbon(aes(ymin=lower, ymax=upper), alpha = .1)
+h7m1_pred_x1_pl
+
+h7m1_pred_x2 <- data.frame(effect("Friendship_Unadj", h7m1, xlevels=list(Friendship_Unadj=0:70)))
+
+h7m1_pred_x2_pl <- ggplot(h7m1_pred_x2, aes(x=Friendship_Unadj, y=fit)) + geom_point() + geom_smooth() + geom_ribbon(aes(ymin=lower, ymax=upper), alpha = .1)
+h7m1_pred_x2_pl
+```
+
+
+# Moderation Analyses
+### Centering and defining a factor variable
+```{r}
+hcp_behav$LifeSatisf_Unadjc <- hcp_behav$LifeSatisf_Unadj - mean(hcp_behav$LifeSatisf_Unadj, na.rm = TRUE)
+hcp_behav$Friendship_Unadjc <- hcp_behav$Friendship_Unadj - mean(hcp_behav$Friendship_Unadj, na.rm = TRUE)
+hcp_behav$AngAffect_Unadjc <- hcp_behav$AngAffect_Unadj - mean(hcp_behav$AngAffect_Unadj, na.rm = TRUE)
+```
+
+### Specifying and estimating the model
+This model has our three main effects, and we are including all three of the interaciton effects in the same model. We have also changed it from a continuous to a binary model.
+```{r}
+h7m2 <- glm(Gender ~ LifeSatisf_Unadjc + Friendship_Unadjc + AngAffect_Unadjc + LifeSatisf_Unadjc*AngAffect_Unadjc + Friendship_Unadjc*AngAffect_Unadjc + LifeSatisf_Unadjc*Friendship_Unadjc, hcp_behav, family = "binomial")
+summary(h7m2)
+```
+
+```{r}
+# Create dataframe object for creating the ORs
+h7m2c <- data.frame(coefficients(summary(h7m2)))
+
+#Compute ORs and CIs around the point estimates
+h7m2c$OR <- round(exp(h7m2c$Estimate), 2)
+h7m2c$LL <- round(exp(h7m2c$Estimate -1.96*h7m2c$Std..Error), 2)
+h7m2c$UL <- round(exp(h7m2c$Estimate +1.96*h7m2c$Std..Error), 2)
+#Concatenate OR & CIs into a single columnM
+h7m2c$OR_CI <- paste0(h7m2c$OR," (", h7m2c$LL,"-",h7m2c$UL,")")
+#cl8m2c$var <- row.names(cl8m2c)
+h7m2c
+#Write results into a csv file
+write.csv(h7m2c, 'assignment_07_m2_results.csv')
+```
+
+## Create effects object for the interaction term
+```{r}
+h7m2_pred <- effect('LifeSatisf_Unadjc*AngAffect_Unadjc', h7m2)
+
+#Using base R to make a very simple plot
+h7m2_pred_pl <- plot(h7m2_pred, ask=FALSE, rescale.axis = F)
+h7m2_pred_pl
+```
+
+## Obtain Simple slopes for significant interaction
+```{r}
+h7m2_ss <- simple_slopes(h7m2)
+h7m2_ss
+```
+
+
+
+
+

@@ -1,0 +1,281 @@
+---
+title: "Lab 4"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: word_document
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+knitr::opts_knit$set(root.dir = "C:/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/")
+
+
+if(!require(dplyr)) install.packages("dplyr"); require(dplyr)
+if(!require(ggplot2)) install.packages("ggplot2"); require(ggplot2)
+if(!require(lavaan)) install.packages("lavaan"); require(lavaan)
+if(!require(GGally)) install.packages("GGally"); require(GGally)
+if(!require(lavaanPlot)) install.packages("lavaanPlot"); require(lavaanPlot)
+if(!require(psych)) install.packages("psych"); require(psych)
+if(!require(lme4)) install.packages("lme4"); require(lme4)
+if(!require(lmerTest)) install.packages("lmerTest"); require(lmerTest)
+if(!require(stargazer)) install.packages("stargazer"); require(stargazer)
+if(!require(MuMIn)) install.packages("MuMIn"); require(MuMIn)
+if(!require(effects)) install.packages("effects"); require(effects)
+if(!require(DataCombine)) install.packages("DataCombine"); require(DataCombine)
+```
+
+
+# Introduction
+## Research Question
+Interpersonal relationships have significant implications for perception, emotion, memory, motivation, and decision-making. Throughout the lifespan, having strong social relationships are important for personal success, health and well-being. One theory proposes that humans have a unique ability to track a large number of social relationships, which have allowed us to live in large groups and societies. As humans enjoy very diverse social lives across their family life, careers, friends, communities, and social media, the research question this project attempts to address is what is the impact of a sustained decrease in the typical number and variety of social relationships on mental health. 
+
+
+# Data Source
+Participants were recruited from Amazon Mechnical Turk (mTurk). mTurk is hosted by Amazon and provides an online platform for individuals (mTurkers) to partake in surveys. Use of mTurk has become popular in psychology research, as it allows for larger sample sizes than what can be typically collected in a lab setting. A link to the survey was posted on mTurk using turkprime.com. The use of "bots" to pose as real participants has been an issue with mTurk, and turkprime has a system that catches and excludes some of these bots. Participants from across the United States were eligible to take the survey at three time points during the beginning of the COVID-19 pandemic, from March to May 2020. An additional eligibility criteria was that participants must have learned English as their first language. This is due to cultural differences in social relationships, which we believe exist but are unable to directly address. Data was collected at three time points. Only individuals who completed the first time point were invited to participate at the second and third time points. All of the survey data for the first time point was collected within one day. At the second and third time points, the survey was opened and participants were invite to complete the survey again. The survey remained open for one week to allow individuals to complete the survey. The second survey was opened three weeks after the first survey was completed, and the third survey was opened four weeks after the second survey was completed. In this way, the time between surveys differed for each participant.  Individuals who missed the second time were still allowed to complete the third time point. In total, 767 participants completed the survey at the first time point, 501 at the second time point, and 365 at the third time point. The level 1 unit of analysis is observations and the level 2 unit of analysis is individuals.
+
+
+```{r}
+# Import data
+responses_excluded <- read.csv('/Users/Administrator/Google_Drive/olson_lab/projects/social_distancing/survey_data/responses_excluded.csv')
+```
+
+```{r}
+socdist_data <- responses_excluded %>% select(AmazonIdentifier, AN_URels, IN_valw, AN_reldiv_sum, dist_total, anxiety, depression, behav_emo_control, pos_affect_calm, pos_affect_happy, bored, do_interests, regulation, routine, health, wave)
+
+names(socdist_data)[names(socdist_data)=='AmazonIdentifier'] <- 'ID'
+```
+
+
+# Dropped Cases
+```{r}
+# Drop cases that have any missing data
+socdist_data <- socdist_data[rowSums(is.na(socdist_data)) == 0,]
+socdist_data %>% group_by(wave) %>% summarise(count = n_distinct(ID))
+
+length(unique(socdist_data$ID))
+```
+
+Cases were dropped for two possible non-compliance reasons. The first is if participants failed attention check questions which were designed to easily reveal whether participants are attending to the survey. These questions were simple and had clear answers such as "which of the following is most likely the color red?" (e.g. strawberries). Participants who failed even one attention check question (of two) were excluded. The second way a participant might have been excluded is if they did not follow directions in how to format their responses for free response questions or did not answer all the questions. This was done so that the response coding could more easily be done by the researchers. In total 647 observations were dropped and 234 individuals were dropped because of subject noncompliance.
+
+|  Wave | Original responses | Excluding attention check failures | Excluding directions failures |
+|---|---|---|---|
+| 1 | 767 | 753 | 467 |
+| 2 | 501 | 463 | 289 |
+| 3 | 365 | 360 | 230 |
+| Unique individuals | 767 | 754 | 533 |
+
+
+# Variables
+This study includes variables that can be grouped as predictors, outcomes, and nuisance variables. The outcome we measured was a latent factor of mental well-being, derived from measures of anxiety, behavioral/emotional control, depression, calm-positive affect, and happy/positive affect. These five variables were measured by asking participants whether they felt each factor much less, less, about the same, more, or much more in the past week. The predictors of interest were the number of social relationships, the variety of social relationship, and the quality of social relationships they experienced in the past week. Participants were asked to report each person they interacted with in the past week, and their relationship to that person, results in their number of relationships (i.e. 10 relationships), and variety of relationship (i.e. 5 unique relationships) reported. They were also asked to rate how positive or negative each relationship was on a scale of one to five indicating very negative, negative, neutral, positive, or very positive. Nuisance variables were boredom, ability to do their interests (i.e. hobbies), ability to regulate one's emotions, their ability to do normal routine, and physical well-being, measured by a report of how they feel similar to the mental well-being questions). The observation level variables were the social relationship feature variables and the nuisance variables, which were all person-centered as we wished to know the pure within-person effects. The individual level variables were the participant means for the predictors, the outcome, and the nuisance variables. All variables were standardized.
+
+## Latent variable
+A latent variable of well-being was created from the five mental health questions. This latent variable will serve as a predictor of the mental health outcomes, and an outcome of the social relationship variables. 
+```{r}
+wellb_mod_mg <- 'Wellb =~ NA*anxiety + pos_affect_calm + depression + pos_affect_happy + behav_emo_control
+                   Wellb ~~ 1*Wellb'
+
+wellb_configural_res <- sem(wellb_mod_mg, socdist_data, estimator='wlsmv')
+socdist_data$wellb_lv <- as.numeric(predict(wellb_configural_res))
+
+# Reverse score mental well-being variable so it is easier to interpret (higher score means better mental well-being)
+socdist_data$wellb_lv <- socdist_data$wellb_lv * -1
+
+
+# Set wave as a factor variable
+socdist_data$wave <- as.numeric(socdist_data$wave)
+```
+
+## Subsetting due to missingness
+```{r}
+socdist_data_ss <- subset(socdist_data, !is.na(AN_URels) & !is.na(IN_valw) & !is.na(AN_reldiv_sum) & !is.na(wellb_lv))
+nrow(socdist_data_ss)
+
+length(unique(socdist_data_ss$ID))
+```
+
+## Aggregation and centering
+The observation level variables will be aggregated as averages of the observations for each participant. Then person-centered variables will be created as this is a longitudinal analysis and we wish to focus on the pure within-subject effects. 
+```{r}
+socdist_data_ss<-group_by(socdist_data_ss, ID)
+socdist_data_ss<-mutate(socdist_data_ss, 
+                    AN_URels.mean = mean(AN_URels,na.rm=TRUE),
+                    IN_valw.mean = mean(IN_valw,na.rm=TRUE),
+                    AN_reldiv_sum.mean = mean(AN_reldiv_sum,na.rm=TRUE),
+                    wellb_lv.mean = mean(wellb_lv, na.rm=TRUE), 
+                    dist_total.mean = mean(dist_total,na.rm=TRUE),
+                    bored.mean = mean(bored,na.rm=TRUE),
+                    do_interests.mean = mean(do_interests,na.rm=TRUE),
+                    regulation.mean = mean(regulation,na.rm=TRUE),
+                    routine.mean = mean(routine,na.rm=TRUE),
+                    health.mean = mean(health,na.rm=TRUE),
+                    coobs=n())
+
+socdist_data_ss <- ungroup(socdist_data_ss)
+socdist_data_ss$AN_URels.pc <- socdist_data_ss$AN_URels - socdist_data_ss$AN_URels.mean
+socdist_data_ss$IN_valw.pc <- socdist_data_ss$IN_valw - socdist_data_ss$IN_valw.mean
+socdist_data_ss$AN_reldiv_sum.pc <- socdist_data_ss$AN_reldiv_sum - socdist_data_ss$AN_reldiv_sum.mean
+socdist_data_ss$wellb_lv.pc <- socdist_data_ss$wellb_lv - socdist_data_ss$wellb_lv.mean
+socdist_data_ss$dist_total.pc <- socdist_data_ss$dist_total - socdist_data_ss$dist_total.mean
+socdist_data_ss$bored.pc <- socdist_data_ss$bored - socdist_data_ss$bored.mean
+socdist_data_ss$do_interests.pc <- socdist_data_ss$do_interests - socdist_data_ss$do_interests.mean
+socdist_data_ss$regulation.pc <- socdist_data_ss$regulation - socdist_data_ss$regulation.mean
+socdist_data_ss$routine.pc <- socdist_data_ss$routine - socdist_data_ss$routine.mean
+socdist_data_ss$health.pc <- socdist_data_ss$health - socdist_data_ss$health.mean
+
+# Standardize
+socdist_data_ss$AN_URels.pc_z <- as.numeric(scale(socdist_data_ss$AN_URels.pc))
+socdist_data_ss$IN_valw.pc_z <- as.numeric(scale(socdist_data_ss$IN_valw.pc))
+socdist_data_ss$AN_reldiv_sum.pc_z <- as.numeric(scale(socdist_data_ss$AN_reldiv_sum.pc))
+socdist_data_ss$wellb_lv_z <- as.numeric(scale(socdist_data_ss$wellb_lv))
+socdist_data_ss$dist_total.pc_z <- as.numeric(scale(socdist_data_ss$dist_total.pc))
+socdist_data_ss$bored.pc_z <- as.numeric(scale(socdist_data_ss$bored.pc))
+socdist_data_ss$do_interests.pc_z <- as.numeric(scale(socdist_data_ss$do_interests.pc))
+socdist_data_ss$regulation.pc_z <- as.numeric(scale(socdist_data_ss$regulation.pc))
+socdist_data_ss$routine.pc_z <- as.numeric(scale(socdist_data_ss$routine.pc))
+socdist_data_ss$health.pc_z <- as.numeric(scale(socdist_data_ss$health.pc))
+
+
+socdist_data_ss[, 16:ncol(socdist_data_ss)] <- lapply(16:ncol(socdist_data_ss), function(x) as.numeric(socdist_data_ss[[x]]))
+
+# Create person-level dataframe
+socdist_data_pl <- group_by(socdist_data_ss, ID)
+socdist_data_pl <- filter(socdist_data_pl[c('ID','AN_URels.mean', 'IN_valw.mean', 'AN_reldiv_sum.mean', 'wellb_lv.mean', 'dist_total.mean', 'bored.mean', 'do_interests.mean', 'regulation.mean', 'routine.mean', 'health.mean')], row_number(ID)==1)
+
+socdist_data_pl$AN_URels.mean_z <- as.numeric(scale(socdist_data_pl$AN_URels.mean))
+socdist_data_pl$IN_valw.mean_z <- as.numeric(scale(socdist_data_pl$IN_valw.mean))
+socdist_data_pl$AN_reldiv_sum.mean_z <- as.numeric(scale(socdist_data_pl$AN_reldiv_sum.mean))
+socdist_data_pl$dist_total.mean_z <- as.numeric(scale(socdist_data_pl$bored.mean))
+socdist_data_pl$bored.mean_z <- as.numeric(scale(socdist_data_pl$dist_total.mean))
+socdist_data_pl$do_interests.mean_z <- as.numeric(scale(socdist_data_pl$do_interests.mean))
+socdist_data_pl$regulation.mean_z <- as.numeric(scale(socdist_data_pl$regulation.mean))
+socdist_data_pl$routine.mean_z <- as.numeric(scale(socdist_data_pl$routine.mean))
+socdist_data_pl$health.mean_z <- as.numeric(scale(socdist_data_pl$health.mean))
+
+socdist_data_pl_merge <- socdist_data_pl[c('ID', 'AN_URels.mean_z', 'IN_valw.mean_z', 'AN_reldiv_sum.mean_z', 'dist_total.mean_z', 'bored.mean_z', 'do_interests.mean_z', 'regulation.mean_z', 'routine.mean_z', 'health.mean_z')]
+
+socdist_data_ss <- merge(socdist_data_ss, socdist_data_pl_merge, by="ID")
+```
+
+
+# Summary Statistics
+```{r, results=F}
+describe(socdist_data_ss)
+```
+```{r, results=F}
+describe(socdist_data_pl)
+```
+
+## Distribution of Outcome
+```{r}
+socdist_data_ss$wavef <- factor(socdist_data_ss$wave)
+ggplot(socdist_data_ss, aes(x = wavef, y=wellb_lv_z, fill=wavef)) + 
+  geom_violin() + 
+  geom_jitter(width=0.05) + 
+  theme_classic() + 
+  labs(title = "Distribution of Mental Well-being by Time point", 
+       x="Time Point", y = "Mental Well-being (z)") + 
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+```
+
+
+# Analysis and Estimation Technique
+Longitudinal analysis with multilevel regression and full maximum likelihood
+Time-varying predictor of weeks in pandemic
+
+
+## Empty model
+```{r}
+model1 <- lmer(wellb_lv_z ~ 1 + (1|ID), data=socdist_data_ss)
+summary(model1)
+```
+
+## Within- and Between-person model
+```{r}
+model2 <- lmer(wellb_lv_z ~ AN_URels.pc_z + IN_valw.pc_z + AN_reldiv_sum.pc_z + 
+                          wave + wave*AN_reldiv_sum.pc_z +
+                          dist_total.pc_z + 
+                          bored.pc_z + do_interests.pc_z + 
+                          routine.pc_z + health.pc_z + 
+                          AN_URels.mean_z + IN_valw.mean_z + 
+                          AN_reldiv_sum.mean_z + dist_total.mean_z + 
+                          bored.mean_z + do_interests.mean_z + 
+                          routine.mean_z + health.mean_z + 
+                          (1 | ID), 
+               data=socdist_data_ss, REML=FALSE)
+
+summary(model2)
+```
+
+
+# Results Table
+```{r, results=F}
+class(model1) <- "lmerMod"
+class(model2) <- "lmerMod"
+
+stargazer(model2, type="text", single.row = TRUE, column.sep.width = "1pt",
+          out = "/Users/Administrator/Google_Drive/courses/Hierarchical_Linear_Modeling/labs/lab_04/regression_table.html",star.cutoffs=c(.05, .005, .001), 
+          covariate.labels = c("# of unique relationships PC", 
+                               "IN time-weighted valence PC", 
+                               "Relation diversity PC",
+                               "Time point",
+                               "Total distance traveled PC",
+                               "Boredom PC", 
+                               "Ability to do interests PC", 
+                               "Ability to do normal routine PC", 
+                               "General physical health PC",
+                               "# of unique relationships M", 
+                               "IN time-weighted valence M",
+                               "Relation diversity M",
+                               "Total distance traveled M",
+                               "Boredom M", 
+                               "Ability to do interests M", 
+                               "Ability to do normal routine M", 
+                               "General physical health M",
+                               "Relation diversity PC * Time point"),
+          dep.var.labels = c("Mental well-being"), 
+          title = "Table 2. Regression table for within and between model of mental well-being.", 
+          notes="All variables are z-standardized. Standard errors in are parentheses. IN = Immediate network, PC = person-centered, M = person-level mean.")
+```
+
+
+# Write-up
+
+
+
+# Graph
+```{r}
+model2_eff<-effect("AN_reldiv_sum.pc_z:wave",model2,
+                   xlevels=list(AN_reldiv_sum.pc_z=c(-1,1), wave=c(1,2,3)))
+model2_eff_df <- data.frame(model2_eff)
+model2_eff_df$AN_reldiv_sum.pc_zf <- factor(model2_eff_df$AN_reldiv_sum.pc_z, 
+                                       labels=c("-1 SD", "+1 SD"))
+model2_eff_df$wavef <- factor(model2_eff_df$wave, 
+                                       labels=c("1", "2", "3"))
+model2_eff_df
+```
+
+```{r}
+ggplot(model2_eff_df, aes(x=AN_reldiv_sum.pc_z, y=fit, color=wavef)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin=lower, ymax=upper), alpha=.1) + 
+  ggtitle("Social Relationship Diversity and Mental Well-being") + 
+  xlab("Social Relationship Diversity (z)") + 
+  ylab("Mental Well-being (z)") + 
+  labs(color="Time Point")
+```
+
+
+# Discussion
+
+
+
+# Appendix
+
+
+
+
+
+

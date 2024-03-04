@@ -1,0 +1,122 @@
+---
+title: "Assignment 4"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+library(psych)
+library(reghelper)
+library(sjPlot)
+```
+
+Set working directory and import data
+```{r}
+
+setwd('~/Google_Drive/courses/Multivariate/homework/assignment_04/')
+getwd()
+
+hcp_behav <- read.csv("~/Google_Drive/courses/Multivariate/homework/assignment_01/unrestricted_hspopal_9_9_2019_22_40_57.csv", row.names = 1, header = TRUE)
+```
+
+### Compute centered variable values
+```{r}
+hcp_behav <- mutate(hcp_behav, 
+                    AngAffect_Unadj_c = AngAffect_Unadj - mean(AngAffect_Unadj, na.rm = T),
+                    Friendship_Unadj_c = Friendship_Unadj - mean(Friendship_Unadj, na.rm = T),
+                    angaffectXfriendship = AngAffect_Unadj_c*Friendship_Unadj_c)
+describe(hcp_behav[c('AngAffect_Unadj','Friendship_Unadj',
+                     'AngAffect_Unadj_c','Friendship_Unadj_c','angaffectXfriendship')])
+
+```
+
+### Run regression model for centered variables
+```{r}
+h4_m1 <- lm(LifeSatisf_Unadj ~ AngAffect_Unadj_c + Friendship_Unadj_c, hcp_behav)
+summary(h4_m1)
+```
+### Run regression model for centered variables and interaction
+```{r}
+h4_m2 <- lm(LifeSatisf_Unadj ~ AngAffect_Unadj_c + Friendship_Unadj_c + angaffectXfriendship, hcp_behav)
+summary(h4_m2)
+```
+### Compare the main effects and the main effects + interaction models
+```{r}
+anova(h4_m1, h4_m2)
+```
+
+
+# Compute angry affect variables for +/- SD around the mean
+Center the data so that the person who was at 0.97, is now at zero.
+```{r}
+hcp_behav <- mutate(hcp_behav, 
+                    AngAffect_m1 = AngAffect_Unadj_c + sd(AngAffect_Unadj_c, na.rm = T),
+                    AngAffect_p1 = AngAffect_Unadj_c - sd(AngAffect_Unadj_c, na.rm = T),
+                    angaffect_m1Xfrnd = AngAffect_m1*Friendship_Unadj_c,
+                    angaffect_p1Xfrnd = AngAffect_p1*Friendship_Unadj_c,
+                    Friendship_m1 = Friendship_Unadj_c + sd(Friendship_Unadj_c, na.rm = T),
+                    Friendship_p1 = Friendship_Unadj_c - sd(Friendship_Unadj_c, na.rm = T),
+                    friendship_m1Xang = Friendship_m1*AngAffect_Unadj_c,
+                    friendship_p1Xang = Friendship_p1*AngAffect_Unadj_c)
+
+describe(hcp_behav[c("AngAffect_Unadj", "AngAffect_Unadj_c", "AngAffect_m1", "AngAffect_p1",
+                     "Friendship_Unadj", "Friendship_Unadj_c", "Friendship_m1", "Friendship_p1")])
+```
+
+# Model for simple slopes at 1 SD below mean of positive sibling relationships
+```{r}
+h4_m3 <- lm(LifeSatisf_Unadj ~ AngAffect_m1 + Friendship_Unadj_c + angaffect_m1Xfrnd,
+            hcp_behav)
+summary(h4_m3)
+```
+
+# Model for simple slopes at 1 SD above mean of positive sibling relationships
+
+```{r}
+h4_m4 <- lm(LifeSatisf_Unadj ~ AngAffect_p1 + Friendship_Unadj_c + angaffect_p1Xfrnd, 
+            hcp_behav)
+summary(h4_m4)
+```
+```{r}
+anova(h4_m3, h4_m4)
+```
+
+### Simple Slopes
+```{r}
+h4_m5 <- lm(LifeSatisf_Unadj ~ AngAffect_Unadj_c*Friendship_Unadj_c, hcp_behav)
+summary(h4_m5)
+
+h4_m5_ss <- simple_slopes(h4_m5)
+h4_m5_ss
+```
+
+# Continuous X Continuous Plot
+```{r}
+h4_m5_p <- plot_model(h4_m5, type = "int")
+h4_m5_p
+
+# Also plot_model(cl5_m11, type = "diag") for regression diagnostics that are clear!
+plot_model(h4_m5, type = "diag")
+```
+
+# Results
+
+We examined the influences of angry affect, friendship level, and their interaction on life satisfaction using hierarchical multiple regression. In the first step of the model, we included the main effects of angry affect and friendship. Both variables were centered for the analysis. In the second step of the model, we included the interaction between angry affect and friendship (computed as the product of the centered variables).
+
+The first step of the model accounted for 20.22% of the variance in life satisfaction, F(2, 1202) = 152.3, p < .001. Angry affect was significantly associated with life satisfaction, b = -0.29, SE = 0.03, t = -9.82, p < .001 . Angry affect was significantly associated with life satisfaction, b = 0.30, SE = 0.03, t = 10.97, p < .001.
+
+In the second step of the model, we added the interaction between angry affect and friendship predicting life satisfaction, beyond the influence of the main effects of the predictors. We found that the inclusion of the interaction did not significantly increase the percentage of variance accounted for in life satisfaction, R2 = 0.001, F(1, 1201) = 1.79, p = .1807. In this step of the model, the main effect of angry affect and friendship were significant predictors of life satisfaction, b = -0.29, SE = 0.03, t = -9.68, p < .001, b = 0.30, SE = 0.03, t = 10.43, p < .001, respectively. The interaction effect was not significantly associated with life satisfaction, b = 0.004, SE = 0.003, t = 1.34, p = .181.
+
+Following Aiken & West (1991), to understand the interaction, we estimated the simple slopes of friendship on life satisfaction at low (-1 SD below the mean), moderate (at the mean), and high (1 SD above the mean) levels of angry affect. The interaction effect is displayed in Figure 1. At low, moderate, and high levels of angry affect, friendship was significantly associated with life satisfaction, b = 0.27, SE = 0.04, t = 7.33, p < .001, b = 0.30, SE = 0.003, t = 10.94, p < .001, b = 0.33, SE = 0.04, t = 9.25, p < .001.
+
+
+
+
+
+
+
+
+
+
+

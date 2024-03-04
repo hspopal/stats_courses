@@ -1,0 +1,193 @@
+---
+title: "Lab 1 - Linear Regression in R"
+author: "Haroon Popal"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_float: 
+      collapsed: false
+    df_print: paged
+    css: !expr here::here("~/Google_Drive/courses/Hierarchical_Linear_Modeling/labs/style_srk_behavioral.css")
+knit: (function(inputFile, encoding) { 
+      out_dir <- '~/Google_Drive/courses/Hierarchical_Linear_Modeling/labs/lab_01/';
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), out_dir, 'lab_01.html')) })
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "~/Google_Drive/olson_lab/projects/social_distancing/")
+```
+
+```{r}
+if(!require(dplyr)) install.packages("dplyr"); require(dplyr)
+if(!require(ggplot2)) install.packages("ggplot2"); require(ggplot2)
+
+```
+
+```{r, results=FALSE}
+#if(!require(FactoMineR)) install.packages("FactoMineR"); require(FactoMineR)
+
+setwd("~/Google_Drive/olson_lab/projects/social_distancing/")
+getwd()
+```
+
+
+# Research Question
+Interpersonal relationships have significant implications for perception, emotion, memory, motivation, and decision-making. In a long term perspective, social relationships are important for personal success, health and well-being. One theory proposes that humans have a unique ability to track a large number of social relationships, which have allowed us to live in large groups and societies. The research question this project attempts to address is what is the impact of a decrease in the typical number and variety of social relationships on mental health. 
+
+
+# Data Source
+Participants were recruited from Amazon Mechnical Turk (mTurk). mTurk is hosted by Amazon and provides an online platform for individuals (mTurkers) to partake in surveys. Use of mTurk has become particularly popular in psychology research. A link to the survey was posted on mTurk using turkprime.com. The use of "bots" to pose as real participants has been an issue with mTurk, and turkprime has a system that catches and excludes some of these bots. Participants from across the United States were eligible to take the survey. An additional eligibility criteria was that participants must have learned English as their first language. This is due to cultural differences in social relationships, which we believe exist but are unable to directly address. Participants were randomly sampled to the extent that the first 500 participants who accessed the survey were included. After 500 participants, the survey link was closed. Longitudinal data was collected by the same survey link, which was opened to participants who completed the initial survey. The time points were spaced three weeks apart.
+
+```{r}
+raw_data <- read.csv('survey_data/Social Distancing_April 15, 2020_07.22.csv', skip=1)
+
+# Drop irrelevant data
+raw_reorg <- raw_data[-c(1),]
+rownames(raw_reorg) <- 1:nrow(raw_reorg)
+head(raw_reorg)
+```
+```{r}
+responses <- raw_reorg[c(19:50)]
+
+names(responses)[1] <- "consent"
+names(responses)[2] <- "social_dist"
+names(responses)[3] <- "social_dist_agency"
+names(responses)[4] <- "social_dist_days"
+names(responses)[5] <- "neighborhood_type"
+names(responses)[6] <- "living_space"
+names(responses)[7] <- "in_person"
+names(responses)[8] <- "video_call"
+names(responses)[9] <- "phone_call"
+names(responses)[10] <- "text"
+names(responses)[11] <- "email"
+names(responses)[12] <- "social_media"
+names(responses)[13] <- "INS"
+names(responses)[14] <- "IN_rel_time"
+names(responses)[15] <- "IN_rel_valence"
+names(responses)[16] <- "EN_rel_time"
+names(responses)[17] <- "EN_rel_valence"
+names(responses)[18] <- "dist_total"
+names(responses)[19] <- "dist_max"
+names(responses)[20] <- "work"
+names(responses)[21] <- "activities"
+names(responses)[22] <- "anxiety"
+names(responses)[23] <- "pos_affect_calm"
+names(responses)[24] <- "depression"
+names(responses)[25] <- "pos_affect_happy"
+names(responses)[26] <- "behav_emo_control"
+names(responses)[28] <- "bored"
+names(responses)[29] <- "do_interests"
+names(responses)[30] <- "regulation"
+names(responses)[31] <- "routine"
+names(responses)[32] <- "health"
+
+head(responses)
+```
+
+## Demographics
+```{r}
+demographics <- raw_reorg[,(ncol(raw_reorg)-7):ncol(raw_reorg)]
+demographics$Highest.Level.of.Education <- factor(demographics$Highest.Level.of.Education, levels = c('Less than high school', 'High school graduate',
+                     'Some college', '2 year degree', '4 year degree',
+                     'Professional degree','Doctorate'))
+
+
+ggplot(demographics, aes(x=Age)) + geom_bar()
+ggplot(demographics, aes(x=Sex)) + geom_bar()
+ggplot(demographics, aes(x=Race)) + geom_bar()
+ggplot(demographics, aes(x=Highest.Level.of.Education)) + geom_bar()
+
+```
+
+
+
+# Dropped Cases
+```{r}
+# Get total number of responses
+paste0("Total number of responses from qualtrics - ", nrow(responses))
+```
+
+```{r}
+foil_items <- raw_reorg[c("Which.of.the.following.below.is.most.likely.the.color.red.", "Which.of.the.following.animals.is.the.largest.")]
+
+ggplot(foil_items, aes(x=Which.of.the.following.below.is.most.likely.the.color.red.)) + geom_bar()
+ggplot(foil_items, aes(x=Which.of.the.following.animals.is.the.largest.)) + geom_bar()
+
+foil_items[foil_items$Which.of.the.following.below.is.most.likely.the.color.red. == 'Strawberries',]
+foil_items[foil_items$Which.of.the.following.animals.is.the.largest. == 'Elephant',]
+nrow(foil_items)
+```
+
+
+# Variables
+
+
+# Scatterplot Matrix
+
+
+# Distribution of Outcome
+
+
+# Summary Statistics
+
+
+# Regression Table
+
+
+# Write-up
+
+
+# Graph
+
+
+# Appendix
+
+
+# Glaring Errors
+
+
+
+
+## List measures that were collected in the study
+```{r}
+responses_excluded <- read.csv('~/Google Drive/olson_lab/projects/social_distancing/survey_data/responses_excluded.csv')
+names(responses_excluded)
+
+wave1_data <- responses_excluded[responses_excluded$wave == 1,]
+wave2_data <- responses_excluded[responses_excluded$wave == 2,]
+
+#well_being <- responses_excluded %>% select(depression, anxiety)
+```
+
+
+![Social Distancing Path Analysis](C:/Users/Administrator/Google Drive/olson_lab/projects/social_distancing/path_analysis.png)
+
+Social distancing measures will impact the number of relationships, variety of relationships, and quality of relationships. These measures will impact the latent factor of well-being, which behavioral/emotional control. This model will be tested at the first time point. In the longitudinal design, the number of days in quarantine will negatively impact the quality of relationships, which will in turn have a negative impact on well-being. 
+
+
+# Time point 1
+
+### Variable definitions
+behav_emo_control = behavioral/emotional control deficits;
+pos_affect_calm = calm positive affect;
+post_affect_happy = happy positive affect;
+IN = immediate network (people at home);
+AN = all network (relationships of everyone at home and anywhere else);
+INS = immediate network size (number of individuals at home);
+URels = number of unique relationships;
+valw = time-weighted valence (the valence of a relationship * proportion of time spent with a relationship);
+frmw = time-weighted formality (1st PCA component);
+actw = time-weighted activeness (2nd PCA component);
+
+
+
+
+
+
+
+
+
