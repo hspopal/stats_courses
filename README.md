@@ -1,5 +1,11 @@
 # Stats Courses
 
+## Hierarchical Linear Modeling
+- [Between Group Regression](https://hspopal.github.io/stats_courses/hlm/lab_01/)
+- [Regression with Simple Slopes](https://hspopal.github.io/stats_courses/hlm/lab_02/)
+- [Indirect Effects and Mediation](https://hspopal.github.io/stats_courses/hlm/lab_03/)
+- [Mediation](https://hspopal.github.io/stats_courses/hlm/lab_04/)
+
 ## Multivariate
 - [Between Group Regression](https://hspopal.github.io/stats_courses/multivariate/between-group_regression/)
 - [Regression with Simple Slopes](https://hspopal.github.io/stats_courses/multivariate/regression_simple-slopes/)
