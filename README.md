@@ -2,7 +2,7 @@
 
 ## Structural Equation Modeling
 - [Path Analysis](https://hspopal.github.io/stats_courses/sem/path_analysis/)
-- [Regression with Simple Slopes](https://hspopal.github.io/stats_courses/sem/assignment_03/)
+- [Indirect Effects](https://hspopal.github.io/stats_courses/sem/indirect_effects/)
 - [Indirect Effects and Mediation](https://hspopal.github.io/stats_courses/sem/assignment_04/)
 - [Mediation](https://hspopal.github.io/stats_courses/sem/assignment_06/)
 - [Logistic Regression](https://hspopal.github.io/stats_courses/sem/assignment_07/)
