@@ -7,7 +7,7 @@
 - [Mediation](https://hspopal.github.io/stats_courses/multivariate/mediation/)
 - [Logistic Regression](https://hspopal.github.io/stats_courses/multivariate/logistic-regression/)
 - [Multi-Level Modeling](https://hspopal.github.io/stats_courses/multivariate/multi-level-modeling)
-- [Assignment 09](https://hspopal.github.io/stats_courses/multivariate/assignment_09/)
+- [Exploratory Factor Analysis](https://hspopal.github.io/stats_courses/multivariate/efa/)
 - [Assignment 10](https://hspopal.github.io/stats_courses/multivariate/assignment_10/)
 
 
